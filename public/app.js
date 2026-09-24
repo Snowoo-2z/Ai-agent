@@ -311,14 +311,14 @@
 
   const animationNames = ['breathe', 'float', 'spin', 'pulse', 'bounce', 'wiggle', 'twinkle', 'glitch', 'drift', 'swing', 'sparkle', 'wave'];
   const characterAnimations = {
-    cat: ['breathe', 'twinkle', 'float', 'bounce', 'wiggle', 'sparkle', 'swing'],
-    fox: ['float', 'drift', 'wiggle', 'bounce', 'sparkle', 'twinkle', 'swing'],
-    robot: ['pulse', 'spin', 'glitch', 'wave', 'float', 'sparkle', 'breathe'],
-    bunny: ['breathe', 'bounce', 'swing', 'twinkle', 'float', 'wiggle', 'sparkle'],
-    'pixel-cat': ['bounce', 'twinkle', 'glitch', 'float', 'wiggle', 'sparkle'],
-    'pixel-fox': ['drift', 'bounce', 'wiggle', 'twinkle', 'glitch', 'float'],
-    'pixel-robot': ['glitch', 'pulse', 'spin', 'wave', 'bounce', 'sparkle'],
-    'pixel-bunny': ['breathe', 'bounce', 'twinkle', 'swing', 'float', 'wiggle']
+    cat: ['breathe', 'twinkle', 'float', 'bounce', 'wiggle', 'sparkle', 'swing', 'wave', 'drift', 'pulse', 'spin', 'glitch'],
+    fox: ['float', 'drift', 'wiggle', 'bounce', 'sparkle', 'twinkle', 'swing', 'breathe', 'wave', 'pulse', 'spin', 'glitch'],
+    robot: ['pulse', 'spin', 'glitch', 'wave', 'float', 'sparkle', 'breathe', 'drift', 'bounce', 'wiggle', 'twinkle', 'swing'],
+    bunny: ['breathe', 'bounce', 'swing', 'twinkle', 'float', 'wiggle', 'sparkle', 'wave', 'drift', 'pulse', 'spin', 'glitch'],
+    'pixel-cat': ['bounce', 'twinkle', 'glitch', 'float', 'wiggle', 'sparkle', 'breathe', 'wave', 'drift', 'pulse', 'spin', 'swing'],
+    'pixel-fox': ['drift', 'bounce', 'wiggle', 'twinkle', 'glitch', 'float', 'sparkle', 'breathe', 'wave', 'pulse', 'spin', 'swing'],
+    'pixel-robot': ['glitch', 'pulse', 'spin', 'wave', 'bounce', 'sparkle', 'breathe', 'drift', 'float', 'wiggle', 'twinkle', 'swing'],
+    'pixel-bunny': ['breathe', 'bounce', 'twinkle', 'swing', 'float', 'wiggle', 'sparkle', 'wave', 'drift', 'pulse', 'spin', 'glitch']
   };
 
   function applyLogoVisuals() {
