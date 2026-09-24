@@ -20,7 +20,7 @@
   const icon = (name, className = 'icon') => `<svg class="${className}"><use href="#icon-${name}"></use></svg>`;
   const logoIcon = (className = 'icon') => {
     const pixel = state.logo.startsWith('pixel-') ? ' pixel-icon' : '';
-    return `<svg class="${className} character-icon${pixel} logo-motion-${state.autoAnimation}" data-aster-logo aria-hidden="true"><use data-aster-use href="#icon-${state.logo}"></use></svg>`;
+    return `<svg class="${className} character-icon${pixel} logo-motion-${state.autoAnimation}" data-aster-logo data-companion="${state.logo}" aria-hidden="true"><use data-aster-use href="#icon-${state.logo}"></use></svg>`;
   };
 
   const elements = {
@@ -325,6 +325,7 @@
     const isPixel = state.logo.startsWith('pixel-');
     $$('[data-aster-logo]').forEach((logo) => {
       logo.classList.add('character-icon');
+      logo.dataset.companion = state.logo;
       logo.classList.toggle('pixel-icon', isPixel);
       animationNames.forEach((animation) => logo.classList.remove(`logo-motion-${animation}`));
       logo.classList.add(`logo-motion-${state.autoAnimation}`);
