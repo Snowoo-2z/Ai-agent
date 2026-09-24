@@ -13,6 +13,8 @@
     autoAnimation: 'breathe',
     autoAnimationTimer: null,
     autoAnimationStep: 0,
+    activityTimer: null,
+    activityIndex: 0,
     interfaceStyle: 'nocturne'
   };
 
@@ -49,6 +51,8 @@
     userEmail: $('#user-email'),
     userAvatar: $('#user-avatar'),
     deleteButton: $('#delete-chat-button'),
+    thinkingTitle: $('#thinking-title'),
+    thinkingSteps: $('#thinking-steps'),
     settingsButton: $('#settings-button'),
     settingsDrawer: $('#settings-drawer'),
     settingsScrim: $('#settings-scrim'),
@@ -599,6 +603,7 @@
   }
 
   function leaveApp() {
+    stopThinkingActivity();
     state.user = null;
     state.conversations = [];
     state.drafts.clear();
@@ -704,6 +709,7 @@
         ${message.role === 'user' ? `<div class="user-avatar">${escapeHtml(userInitial)}</div>` : `<div class="assistant-avatar">${logoIcon()}</div>`}
         <div class="message-content">
           <div class="message-meta"><span>${message.role === 'user' ? 'Vous' : 'Aster'}</span><span>${escapeHtml(formatDate(message.createdAt))}</span></div>
+          ${message.role === 'assistant' ? renderToolTrace(message.tools) : ''}
           <div class="message-bubble">${renderMarkdown(message.content)}</div>
         </div>
       </article>
@@ -762,6 +768,69 @@
     renderConversationList();
   }
 
+  function renderToolTrace(tools = []) {
+    if (!Array.isArray(tools) || !tools.length) return '';
+    const labels = tools.map((tool) => {
+      if (tool.name === 'advanced_markdown_search') return 'Commande Advanced Markdown consultée';
+      if (tool.name === 'advanced_markdown') {
+        if (tool.command === 'geometry') return 'Schéma géométrique construit';
+        if (tool.command === 'chart') return 'Graphique construit';
+        if (tool.command === 'math') return 'Bloc mathématique construit';
+        return 'Rendu Advanced Markdown construit';
+      }
+      if (tool.name === 'web_search') return 'Recherche web effectuée';
+      if (tool.name === 'get_current_time') return 'Heure exacte vérifiée';
+      return 'Outil utilisé';
+    });
+    return `<div class="message-tool-trace" aria-label="Actions effectuées"><span class="trace-heading">Actions effectuées</span><div class="trace-lines">${labels.map((label) => `<span class="trace-line"><i aria-hidden="true"></i>${escapeHtml(label)}</span>`).join('')}</div></div>`;
+  }
+
+  function thinkingPlan(prompt) {
+    if (/sch[ée]ma|diagramme|g[ée]om[ée]tr|triangle|figure|polygone|cercle|graphique|graphe|courbe|math/i.test(prompt)) {
+      return {
+        title: 'Aster construit un rendu visuel',
+        steps: ['Analyse la demande visuelle', 'Cherche la commande Advanced Markdown adaptée', 'Construit le schéma ou le graphique SVG', 'Vérifie les données avant affichage']
+      };
+    }
+    return {
+      title: 'Aster prépare une réponse',
+      steps: ['Analyse votre demande', 'Sélectionne les outils utiles', 'Compose les grandes lignes de la réponse', 'Vérifie les détails']
+    };
+  }
+
+  function updateThinkingStep() {
+    const steps = $$('.thinking-step', elements.thinkingSteps);
+    steps.forEach((step, index) => {
+      const active = index === state.activityIndex;
+      const done = index < state.activityIndex;
+      step.classList.toggle('active', active);
+      step.classList.toggle('done', done);
+      const marker = $('.thinking-step-marker', step);
+      if (marker) marker.textContent = done ? '✓' : active ? '—' : '';
+    });
+  }
+
+  function startThinkingActivity(prompt) {
+    const plan = thinkingPlan(prompt);
+    window.clearInterval(state.activityTimer);
+    state.activityIndex = 0;
+    elements.thinkingTitle.textContent = plan.title;
+    elements.thinkingSteps.innerHTML = plan.steps.map((step, index) => `<span class="thinking-step" data-thinking-index="${index}"><i class="thinking-step-marker" aria-hidden="true"></i>${escapeHtml(step)}</span>`).join('');
+    elements.typing.classList.remove('hidden');
+    updateThinkingStep();
+    state.activityTimer = window.setInterval(() => {
+      const total = plan.steps.length;
+      state.activityIndex = Math.min(state.activityIndex + 1, total - 1);
+      updateThinkingStep();
+    }, 900);
+  }
+
+  function stopThinkingActivity() {
+    window.clearInterval(state.activityTimer);
+    state.activityTimer = null;
+    elements.typing.classList.add('hidden');
+  }
+
   async function sendMessage(content = elements.messageInput.value) {
     if (state.loading) return;
     const text = content.trim();
@@ -785,7 +854,7 @@
     }
     renderConversationList();
     renderConversation();
-    elements.typing.classList.remove('hidden');
+    startThinkingActivity(text);
     scrollToBottom();
 
     try {
@@ -805,7 +874,7 @@
       showToast(error.message, 'error');
     } finally {
       state.loading = false;
-      elements.typing.classList.add('hidden');
+      stopThinkingActivity();
       elements.sendButton.disabled = false;
       elements.messageInput.focus();
     }

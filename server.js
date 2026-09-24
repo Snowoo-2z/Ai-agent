@@ -446,7 +446,7 @@ async function searchWeb(query) {
 const advancedMarkdownCommands = [
   {
     command: 'geometry',
-    aliases: ['figure', 'géométrie', 'geometrie'],
+    aliases: ['figure', 'schéma', 'schema', 'diagramme', 'géométrie', 'geometrie'],
     description: 'Construit une figure géométrique SVG avec grille, axes, points, segments, polygones et cercles.',
     syntax: '```advanced-geometry\n{"width":100,"height":100,"polygons":[{"points":[[10,80],[50,10],[90,80]]}],"points":[{"x":50,"y":10,"label":"A"}]}\n```'
   },
@@ -496,7 +496,7 @@ function normalizeGeometrySpec(input = {}) {
   const source = input && typeof input === 'object' ? input : {};
   const width = clampNumber(source.width ?? source.viewBox?.width, 40, 10000, 100);
   const height = clampNumber(source.height ?? source.viewBox?.height, 40, 10000, 100);
-  const points = advancedPointList(source.points);
+  const points = advancedPointList(source.points || source.vertices || source.coordinates);
   const pointAt = (value) => {
     if (Number.isInteger(value) && points[value]) return points[value];
     return advancedPoint(value);
@@ -606,7 +606,17 @@ function advancedMarkdownResult(command, specInput, title) {
   if (!['geometry', 'chart', 'math'].includes(normalizedCommand)) {
     return { error: 'Commande Advanced Markdown inconnue. Utilise geometry, chart ou math.' };
   }
-  const source = specInput && typeof specInput === 'object' ? { ...specInput } : {};
+  let source = {};
+  if (typeof specInput === 'string') {
+    try {
+      const parsed = JSON.parse(specInput);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) source = { ...parsed };
+    } catch {
+      source = {};
+    }
+  } else if (specInput && typeof specInput === 'object' && !Array.isArray(specInput)) {
+    source = { ...specInput };
+  }
   if (title) source.title = title;
   const spec = normalizedCommand === 'geometry'
     ? normalizeGeometrySpec(source)
@@ -656,7 +666,7 @@ const mistralTools = [
     type: 'function',
     function: {
       name: 'advanced_markdown',
-      description: 'Construit un bloc Advanced Markdown sécurisé et directement affichable dans le chat. Utilise geometry pour les figures SVG, chart pour les graphiques et math pour les équations avec étapes.',
+      description: 'Construit un bloc Advanced Markdown sécurisé et directement affichable dans le chat. Appelle cet outil pour tout schéma, dessin, construction géométrique ou graphique. Utilise geometry pour les figures SVG, chart pour les graphiques et math pour les équations avec étapes.',
       parameters: {
         type: 'object',
         properties: {
@@ -685,7 +695,11 @@ async function runMistralTool(toolCall) {
   if (name === 'get_current_time') return parisClock();
   if (name === 'web_search') return searchWeb(argumentsObject.query);
   if (name === 'advanced_markdown_search') return searchAdvancedMarkdown(argumentsObject.query);
-  if (name === 'advanced_markdown') return advancedMarkdownResult(argumentsObject.command, argumentsObject.spec, argumentsObject.title);
+  if (name === 'advanced_markdown') {
+    const command = argumentsObject.command || argumentsObject.action || argumentsObject.type;
+    const spec = argumentsObject.spec ?? argumentsObject.data ?? argumentsObject.options ?? argumentsObject;
+    return advancedMarkdownResult(command, spec, argumentsObject.title);
+  }
   return { error: `Fonction inconnue: ${name}` };
 }
 
@@ -734,7 +748,7 @@ async function callMistral(conversation) {
   const messages = [
     {
       role: 'system',
-      content: `Tu es Aster, un assistant IA utile, clair et chaleureux. Réponds en français sauf si l’utilisateur te parle dans une autre langue. Nous sommes le ${clock.date}, l’année actuelle est ${clock.year}, et il est ${clock.time} dans le fuseau Europe/Paris. La liste des outils disponibles est exposée dans l’appel : get_current_time, web_search, advanced_markdown_search et advanced_markdown. Les fonctions te donnent l’heure réelle et permettent de rechercher le web : appelle get_current_time pour toute demande d’heure exacte, et web_search pour les informations récentes ou à vérifier. Tu peux utiliser Markdown (titres, listes, tableaux, liens et blocs de code) pour rendre tes réponses lisibles. Pour une figure, une construction de géométrie, une équation ou un graphique, utilise Advanced Markdown. Si tu ne connais pas la commande, appelle d’abord advanced_markdown_search, puis appelle advanced_markdown avec un spec JSON. Quand advanced_markdown renvoie renderBlock, recopie ce bloc exactement dans ta réponse, sur sa propre ligne : l’interface le transforme en rendu SVG ou mathématique sécurisé directement dans le chat. Les syntaxes reconnues sont les blocs advanced-geometry, advanced-chart et advanced-math. Structure tes réponses avec des listes ou des étapes quand cela améliore la lisibilité. Ne prétends pas avoir accès à des informations privées ou à des actions que tu n’as pas effectuées.`
+      content: `Tu es Aster, un assistant IA utile, clair et chaleureux. Réponds en français sauf si l’utilisateur te parle dans une autre langue. Nous sommes le ${clock.date}, l’année actuelle est ${clock.year}, et il est ${clock.time} dans le fuseau Europe/Paris. La liste des outils disponibles est exposée dans l’appel : get_current_time, web_search, advanced_markdown_search et advanced_markdown. Les fonctions te donnent l’heure réelle et permettent de rechercher le web : appelle get_current_time pour toute demande d’heure exacte, et web_search pour les informations récentes ou à vérifier. Tu peux utiliser Markdown (titres, listes, tableaux, liens et blocs de code) pour rendre tes réponses lisibles. Pour tout schéma, dessin, construction de géométrie, équation ou graphique, tu dois appeler Advanced Markdown au lieu de répondre seulement avec du texte ou un bloc de code. Si tu ne connais pas la commande, appelle d’abord advanced_markdown_search, puis appelle advanced_markdown avec un spec JSON. Quand advanced_markdown renvoie renderBlock, recopie ce bloc exactement dans ta réponse, sur sa propre ligne : l’interface le transforme en rendu SVG ou mathématique sécurisé directement dans le chat. Les syntaxes reconnues sont les blocs advanced-geometry, advanced-chart et advanced-math. Structure tes réponses avec des listes ou des étapes quand cela améliore la lisibilité. Ne prétends pas avoir accès à des informations privées ou à des actions que tu n’as pas effectuées.`
     },
     ...conversation.messages.slice(-14).map((message) => ({
       role: message.role === 'assistant' ? 'assistant' : 'user',
@@ -742,6 +756,7 @@ async function callMistral(conversation) {
     }))
   ];
   const advancedBlocks = [];
+  const usedTools = [];
 
   for (let turn = 0; turn < 4; turn += 1) {
     const data = await requestMistral({
@@ -761,12 +776,18 @@ async function callMistral(conversation) {
       if (typeof content !== 'string' || !content.trim()) throw new AppError(502, 'Mistral a renvoyé une réponse vide.');
       const answer = content.trim();
       const missingBlocks = advancedBlocks.filter((block) => !answer.includes(block));
-      return missingBlocks.length ? `${answer}\n\n${missingBlocks.join('\n\n')}` : answer;
+      return {
+        content: missingBlocks.length ? `${answer}\n\n${missingBlocks.join('\n\n')}` : answer,
+        tools: usedTools
+      };
     }
 
     messages.push(assistantMessage);
     for (const toolCall of toolCalls) {
       const result = await runMistralTool(toolCall);
+      const toolEntry = { name: toolCall.function?.name || 'unknown' };
+      if (result?.command) toolEntry.command = result.command;
+      if (!usedTools.some((item) => item.name === toolEntry.name && item.command === toolEntry.command)) usedTools.push(toolEntry);
       if (result?.renderBlock && !advancedBlocks.includes(result.renderBlock)) advancedBlocks.push(result.renderBlock);
       messages.push({
         role: 'tool',
@@ -907,9 +928,9 @@ app.post('/api/conversations/:id/messages', requireAuth, asyncRoute(async (req, 
     message: `Ajouter un message à ${conversation.id}`
   });
 
-  let assistantContent;
+  let assistantResult;
   try {
-    assistantContent = await callMistral(conversation);
+    assistantResult = await callMistral(conversation);
   } catch (error) {
     return res.status(error.status || 502).json({
       error: error.expose === false ? 'Une erreur est survenue.' : error.message,
@@ -920,7 +941,8 @@ app.post('/api/conversations/:id/messages', requireAuth, asyncRoute(async (req, 
   const assistantMessage = {
     id: `msg_${crypto.randomUUID()}`,
     role: 'assistant',
-    content: assistantContent,
+    content: assistantResult.content,
+    tools: Array.isArray(assistantResult.tools) ? assistantResult.tools : [],
     createdAt: new Date().toISOString()
   };
   conversation.messages.push(assistantMessage);

@@ -217,9 +217,12 @@
             </div>
           </section>
           <section id="messages" class="messages hidden" aria-live="polite"></section>
-          <div id="typing-indicator" class="typing-indicator hidden" aria-label="Aster rédige une réponse">
+          <div id="typing-indicator" class="typing-indicator hidden" aria-label="Aster travaille">
             <div class="assistant-avatar small"><svg class="icon" data-aster-logo aria-hidden="true"><use data-aster-use href="#icon-aster"></use></svg></div>
-            <div class="typing-bubble"><span></span><span></span><span></span></div>
+            <div class="thinking-panel">
+              <div class="thinking-heading"><span class="thinking-pulse" aria-hidden="true"></span><strong id="thinking-title">Aster prépare une réponse</strong></div>
+              <div id="thinking-steps" class="thinking-steps" aria-live="polite"></div>
+            </div>
           </div>
         </div>
 
