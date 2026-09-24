@@ -305,7 +305,12 @@
     daylight: { label: 'Lumière', theme: 'light' },
     aurora: { label: 'Aurora', theme: 'dark' },
     sakura: { label: 'Sakura', theme: 'light' },
-    terminal: { label: 'Terminal', theme: 'dark' }
+    terminal: { label: 'Terminal', theme: 'dark' },
+    ocean: { label: 'Océan', theme: 'dark' },
+    forest: { label: 'Forêt', theme: 'dark' },
+    sunset: { label: 'Sunset', theme: 'dark' },
+    paper: { label: 'Papier', theme: 'light' },
+    mono: { label: 'Monochrome', theme: 'dark' }
   };
 
   function setInterfaceStyle(style) {
