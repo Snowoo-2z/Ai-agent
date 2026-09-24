@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: aster-chat
+    env: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_OWNER
+        sync: false
+      - key: GITHUB_REPO
+        sync: false
+      - key: GITHUB_BRANCH
+        value: main
+      - key: MISTRAL_API_KEY
+        sync: false
+      - key: MISTRAL_MODEL
+        value: ministral-8b-latest
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
