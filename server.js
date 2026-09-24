@@ -445,6 +445,12 @@ async function searchWeb(query) {
 
 const advancedMarkdownCommands = [
   {
+    command: 'diagram',
+    aliases: ['schéma', 'schema', 'diagramme', 'flowchart', 'flux'],
+    description: 'Construit un schéma SVG de flux avec des nœuds, des connexions, des flèches et des libellés.',
+    syntax: '```advanced-diagram\n{"width":600,"height":300,"nodes":[{"id":"user","x":40,"y":110,"width":120,"height":60,"label":"Utilisateur"}],"edges":[]}\n```'
+  },
+  {
     command: 'geometry',
     aliases: ['figure', 'schéma', 'schema', 'diagramme', 'géométrie', 'geometrie'],
     description: 'Construit une figure géométrique SVG avec grille, axes, points, segments, polygones et cercles.',
@@ -490,6 +496,58 @@ function advancedPoint(value) {
 function advancedPointList(values, max = 80) {
   if (!Array.isArray(values)) return [];
   return values.slice(0, max).map(advancedPoint).filter(Boolean);
+}
+
+function normalizeDiagramSpec(input = {}) {
+  const source = input && typeof input === 'object' ? input : {};
+  const width = clampNumber(source.width, 240, 1600, 600);
+  const height = clampNumber(source.height, 160, 1000, 300);
+  const rawNodes = Array.isArray(source.nodes) ? source.nodes.slice(0, 40) : [];
+  const defaultWidth = Math.min(150, Math.max(84, width / Math.max(rawNodes.length, 1) - 24));
+  const defaultHeight = 56;
+  const columns = Math.max(1, Math.ceil(Math.sqrt(Math.max(rawNodes.length, 1))));
+  const nodes = rawNodes.map((node, index) => {
+    const nodeWidth = clampNumber(node?.width, 48, 360, defaultWidth);
+    const nodeHeight = clampNumber(node?.height, 30, 180, defaultHeight);
+    const hasX = Number.isFinite(Number(node?.x ?? node?.left));
+    const hasY = Number.isFinite(Number(node?.y ?? node?.top));
+    const column = index % columns;
+    const row = Math.floor(index / columns);
+    return {
+      id: advancedText(node?.id ?? node?.key, `node-${index + 1}`, 64),
+      x: clampNumber(node?.x ?? node?.left, 0, width - nodeWidth, 24 + column * (nodeWidth + 42)),
+      y: clampNumber(node?.y ?? node?.top, 0, height - nodeHeight, 30 + row * (nodeHeight + 34)),
+      width: nodeWidth,
+      height: nodeHeight,
+      label: advancedText(node?.label ?? node?.text ?? node?.name, `Nœud ${index + 1}`, 160),
+      fill: advancedText(node?.fill ?? node?.background, '', 40),
+      color: advancedText(node?.color ?? node?.stroke, '', 40),
+      shape: ['ellipse', 'circle', 'diamond'].includes(String(node?.shape || '').toLowerCase()) ? String(node.shape).toLowerCase() : 'rect',
+      labelPosition: advancedText(node?.labelPosition, 'center', 20)
+    };
+  });
+  const nodeIds = new Set(nodes.map((node) => node.id));
+  const edges = (Array.isArray(source.edges) ? source.edges : (source.connections || [])).slice(0, 80).map((edge) => ({
+    from: Number.isInteger(edge?.from) ? nodes[edge.from]?.id : advancedText(edge?.from ?? edge?.source ?? edge?.start, '', 64),
+    to: Number.isInteger(edge?.to) ? nodes[edge.to]?.id : advancedText(edge?.to ?? edge?.target ?? edge?.end, '', 64),
+    startX: clampNumber(edge?.startX ?? edge?.x1, 0, width, 0),
+    startY: clampNumber(edge?.startY ?? edge?.y1, 0, height, 0),
+    endX: clampNumber(edge?.endX ?? edge?.x2, 0, width, 0),
+    endY: clampNumber(edge?.endY ?? edge?.y2, 0, height, 0),
+    label: advancedText(edge?.label ?? edge?.text, '', 100),
+    color: advancedText(edge?.color ?? edge?.stroke, '', 40),
+    dashed: Boolean(edge?.dashed),
+    arrow: edge?.arrow !== false
+  })).filter((edge) => (edge.from && nodeIds.has(edge.from)) || (edge.to && nodeIds.has(edge.to)) || (edge.endX !== 0 || edge.endY !== 0));
+  return {
+    width,
+    height,
+    title: advancedText(source.title, 'Schéma', 120),
+    grid: source.grid === false ? false : { step: clampNumber(source.grid?.step, 1, 1000, 20) },
+    axes: false,
+    nodes,
+    edges
+  };
 }
 
 function normalizeGeometrySpec(input = {}) {
@@ -538,6 +596,7 @@ function normalizeGeometrySpec(input = {}) {
   if (!circles.length && String(source.shape || '').toLowerCase() === 'circle' && source.center) {
     circles.push({ center: advancedPoint(source.center), radius: clampNumber(source.radius, 0.1, 10000, 10), label: advancedText(source.label, '', 48), color: advancedText(source.color, '', 40), fill: advancedText(source.fill, '', 40) });
   }
+  const diagram = Array.isArray(source.nodes) ? normalizeDiagramSpec(source) : null;
   return {
     width,
     height,
@@ -548,6 +607,8 @@ function normalizeGeometrySpec(input = {}) {
     segments,
     polygons,
     circles,
+    nodes: diagram?.nodes || [],
+    edges: diagram?.edges || [],
     labels: Array.isArray(source.labels) ? source.labels.slice(0, 80).map((label) => ({
       ...advancedPoint(label),
       text: advancedText(label?.text || label?.label, '', 80)
@@ -603,8 +664,8 @@ function searchAdvancedMarkdown(query) {
 
 function advancedMarkdownResult(command, specInput, title) {
   const normalizedCommand = String(command || '').toLowerCase();
-  if (!['geometry', 'chart', 'math'].includes(normalizedCommand)) {
-    return { error: 'Commande Advanced Markdown inconnue. Utilise geometry, chart ou math.' };
+  if (!['diagram', 'geometry', 'chart', 'math'].includes(normalizedCommand)) {
+    return { error: 'Commande Advanced Markdown inconnue. Utilise diagram, geometry, chart ou math.' };
   }
   let source = {};
   if (typeof specInput === 'string') {
@@ -618,11 +679,13 @@ function advancedMarkdownResult(command, specInput, title) {
     source = { ...specInput };
   }
   if (title) source.title = title;
-  const spec = normalizedCommand === 'geometry'
-    ? normalizeGeometrySpec(source)
-    : normalizedCommand === 'chart'
-      ? normalizeChartSpec(source)
-      : normalizeMathSpec(source);
+  const spec = normalizedCommand === 'diagram'
+    ? normalizeDiagramSpec(source)
+    : normalizedCommand === 'geometry'
+      ? normalizeGeometrySpec(source)
+      : normalizedCommand === 'chart'
+        ? normalizeChartSpec(source)
+        : normalizeMathSpec(source);
   const renderBlock = `\`\`\`advanced-${normalizedCommand}\n${JSON.stringify(spec)}\n\`\`\``;
   return { tool: 'Advanced Markdown', command: normalizedCommand, spec, renderBlock };
 }
@@ -666,11 +729,11 @@ const mistralTools = [
     type: 'function',
     function: {
       name: 'advanced_markdown',
-      description: 'Construit un bloc Advanced Markdown sécurisé et directement affichable dans le chat. Appelle cet outil pour tout schéma, dessin, construction géométrique ou graphique. Utilise geometry pour les figures SVG, chart pour les graphiques et math pour les équations avec étapes.',
+      description: 'Construit un bloc Advanced Markdown sécurisé et directement affichable dans le chat. Appelle cet outil pour tout schéma, dessin, construction géométrique ou graphique. Utilise diagram pour les schémas de flux, geometry pour les figures SVG, chart pour les graphiques et math pour les équations avec étapes.',
       parameters: {
         type: 'object',
         properties: {
-          command: { type: 'string', enum: ['geometry', 'chart', 'math'], description: 'La commande Advanced Markdown à exécuter.' },
+          command: { type: 'string', enum: ['diagram', 'geometry', 'chart', 'math'], description: 'La commande Advanced Markdown à exécuter.' },
           title: { type: 'string', description: 'Titre facultatif du bloc.' },
           spec: { type: 'object', description: 'Paramètres structurés de la figure, du graphique ou de la formule.' }
         },
@@ -748,7 +811,7 @@ async function callMistral(conversation) {
   const messages = [
     {
       role: 'system',
-      content: `Tu es Aster, un assistant IA utile, clair et chaleureux. Réponds en français sauf si l’utilisateur te parle dans une autre langue. Nous sommes le ${clock.date}, l’année actuelle est ${clock.year}, et il est ${clock.time} dans le fuseau Europe/Paris. La liste des outils disponibles est exposée dans l’appel : get_current_time, web_search, advanced_markdown_search et advanced_markdown. Les fonctions te donnent l’heure réelle et permettent de rechercher le web : appelle get_current_time pour toute demande d’heure exacte, et web_search pour les informations récentes ou à vérifier. Tu peux utiliser Markdown (titres, listes, tableaux, liens et blocs de code) pour rendre tes réponses lisibles. Pour tout schéma, dessin, construction de géométrie, équation ou graphique, tu dois appeler Advanced Markdown au lieu de répondre seulement avec du texte ou un bloc de code. Si tu ne connais pas la commande, appelle d’abord advanced_markdown_search, puis appelle advanced_markdown avec un spec JSON. Quand advanced_markdown renvoie renderBlock, recopie ce bloc exactement dans ta réponse, sur sa propre ligne : l’interface le transforme en rendu SVG ou mathématique sécurisé directement dans le chat. Les syntaxes reconnues sont les blocs advanced-geometry, advanced-chart et advanced-math. Structure tes réponses avec des listes ou des étapes quand cela améliore la lisibilité. Ne prétends pas avoir accès à des informations privées ou à des actions que tu n’as pas effectuées.`
+      content: `Tu es Aster, un assistant IA utile, clair et chaleureux. Réponds en français sauf si l’utilisateur te parle dans une autre langue. Nous sommes le ${clock.date}, l’année actuelle est ${clock.year}, et il est ${clock.time} dans le fuseau Europe/Paris. La liste des outils disponibles est exposée dans l’appel : get_current_time, web_search, advanced_markdown_search et advanced_markdown. Les fonctions te donnent l’heure réelle et permettent de rechercher le web : appelle get_current_time pour toute demande d’heure exacte, et web_search pour les informations récentes ou à vérifier. Tu peux utiliser Markdown (titres, listes, tableaux, liens et blocs de code) pour rendre tes réponses lisibles. Pour tout schéma, dessin, construction de géométrie, équation ou graphique, tu dois appeler Advanced Markdown au lieu de répondre seulement avec du texte ou un bloc de code. Si tu ne connais pas la commande, appelle d’abord advanced_markdown_search, puis appelle advanced_markdown avec un spec JSON. Quand advanced_markdown renvoie renderBlock, recopie ce bloc exactement dans ta réponse, sur sa propre ligne : l’interface le transforme en rendu SVG ou mathématique sécurisé directement dans le chat. Les syntaxes reconnues sont les blocs advanced-diagram, advanced-geometry, advanced-chart et advanced-math. Structure tes réponses avec des listes ou des étapes quand cela améliore la lisibilité. Ne prétends pas avoir accès à des informations privées ou à des actions que tu n’as pas effectuées.`
     },
     ...conversation.messages.slice(-14).map((message) => ({
       role: message.role === 'assistant' ? 'assistant' : 'user',

@@ -103,7 +103,62 @@
     return points.map((point) => `${advancedFiniteNumber(point.x)},${advancedFiniteNumber(point.y)}`).join(' ');
   }
 
+  function renderAdvancedDiagram(spec = {}) {
+    const width = Math.min(1600, Math.max(240, advancedFiniteNumber(spec.width, 600)));
+    const height = Math.min(1000, Math.max(160, advancedFiniteNumber(spec.height, 300)));
+    const title = escapeHtml(spec.title || 'Schéma');
+    const nodes = Array.isArray(spec.nodes) ? spec.nodes : [];
+    const nodeById = new Map(nodes.map((node, index) => [String(node.id || `node-${index + 1}`), node]));
+    const resolveNode = (reference) => {
+      if (reference === undefined || reference === null || reference === '') return null;
+      const byId = nodeById.get(String(reference));
+      if (byId) return byId;
+      if (Number.isInteger(reference) && nodes[reference]) return nodes[reference];
+      return null;
+    };
+    const center = (node) => node ? { x: advancedFiniteNumber(node.x) + advancedFiniteNumber(node.width, 100) / 2, y: advancedFiniteNumber(node.y) + advancedFiniteNumber(node.height, 56) / 2 } : null;
+    const parts = ['<defs><marker id="advanced-arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="var(--advanced-accent)"/></marker></defs>'];
+    const gridStep = Math.min(1000, Math.max(1, advancedFiniteNumber(spec.grid?.step, 20)));
+    if (spec.grid !== false) {
+      for (let x = 0; x <= width; x += gridStep) parts.push(`<line class="advanced-grid-line" x1="${x}" y1="0" x2="${x}" y2="${height}"/>`);
+      for (let y = 0; y <= height; y += gridStep) parts.push(`<line class="advanced-grid-line" x1="0" y1="${y}" x2="${width}" y2="${y}"/>`);
+    }
+    (Array.isArray(spec.edges) ? spec.edges : []).forEach((edge) => {
+      const fromNode = resolveNode(edge.from);
+      const toNode = resolveNode(edge.to);
+      const from = center(fromNode) || { x: advancedFiniteNumber(edge.startX), y: advancedFiniteNumber(edge.startY) };
+      const to = center(toNode) || { x: advancedFiniteNumber(edge.endX, width), y: advancedFiniteNumber(edge.endY) };
+      const color = advancedSvgColor(edge.color, 'var(--advanced-accent)');
+      const marker = edge.arrow === false ? '' : ' marker-end="url(#advanced-arrowhead)"';
+      parts.push(`<line class="advanced-diagram-edge${edge.dashed ? ' dashed' : ''}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" stroke="${color}"${marker}/>`);
+      if (edge.label) parts.push(`<text class="advanced-shape-label" x="${(from.x + to.x) / 2}" y="${(from.y + to.y) / 2 - 5}" text-anchor="middle">${escapeHtml(edge.label)}</text>`);
+    });
+    nodes.forEach((node, index) => {
+      const x = advancedFiniteNumber(node.x);
+      const y = advancedFiniteNumber(node.y);
+      const nodeWidth = Math.max(48, advancedFiniteNumber(node.width, 100));
+      const nodeHeight = Math.max(30, advancedFiniteNumber(node.height, 56));
+      const fill = advancedSvgColor(node.fill, 'var(--surface-raised)');
+      const stroke = advancedSvgColor(node.color, 'var(--advanced-accent)');
+      const shape = String(node.shape || 'rect').toLowerCase();
+      if (shape === 'diamond') {
+        const points = `${x + nodeWidth / 2},${y} ${x + nodeWidth},${y + nodeHeight / 2} ${x + nodeWidth / 2},${y + nodeHeight} ${x},${y + nodeHeight / 2}`;
+        parts.push(`<polygon class="advanced-diagram-node" points="${points}" fill="${fill}" stroke="${stroke}"/>`);
+      } else if (shape === 'ellipse' || shape === 'circle') {
+        parts.push(`<ellipse class="advanced-diagram-node" cx="${x + nodeWidth / 2}" cy="${y + nodeHeight / 2}" rx="${nodeWidth / 2}" ry="${nodeHeight / 2}" fill="${fill}" stroke="${stroke}"/>`);
+      } else {
+        parts.push(`<rect class="advanced-diagram-node" x="${x}" y="${y}" width="${nodeWidth}" height="${nodeHeight}" rx="10" fill="${fill}" stroke="${stroke}"/>`);
+      }
+      const lines = String(node.label || `Nœud ${index + 1}`).split(/\n/).slice(0, 4);
+      const lineHeight = 12;
+      const startY = y + nodeHeight / 2 - ((lines.length - 1) * lineHeight) / 2 + 4;
+      parts.push(`<text class="advanced-diagram-label" x="${x + nodeWidth / 2}" y="${startY}" text-anchor="middle">${lines.map((line, lineIndex) => `<tspan x="${x + nodeWidth / 2}" dy="${lineIndex ? lineHeight : 0}">${escapeHtml(line)}</tspan>`).join('')}</text>`);
+    });
+    return `<figure class="advanced-card advanced-diagram-card"><figcaption>${title}<span>Advanced Markdown · schéma</span></figcaption><div class="advanced-visual-wrap"><svg class="advanced-svg diagram-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${title}">${parts.join('')}</svg></div></figure>`;
+  }
+
   function renderAdvancedGeometry(spec = {}) {
+    if (Array.isArray(spec.nodes) && spec.nodes.length) return renderAdvancedDiagram(spec);
     const width = Math.min(10000, Math.max(40, advancedFiniteNumber(spec.width, 100)));
     const height = Math.min(10000, Math.max(40, advancedFiniteNumber(spec.height, 100)));
     const title = escapeHtml(spec.title || 'Figure géométrique');
@@ -234,6 +289,7 @@
     try {
       const spec = JSON.parse(rawSpec.trim());
       if (!spec || typeof spec !== 'object' || Array.isArray(spec)) return null;
+      if (command === 'diagram') return renderAdvancedDiagram(spec);
       if (command === 'geometry') return renderAdvancedGeometry(spec);
       if (command === 'chart') return renderAdvancedChart(spec);
       if (command === 'math') return renderAdvancedMath(spec);
@@ -246,15 +302,32 @@
   function extractAdvancedBlocks(value) {
     const blocks = [];
     let source = String(value ?? '');
-    const addBlock = (match, command, rawSpec) => {
-      const rendered = renderAdvancedBlock(command.toLowerCase(), rawSpec);
-      if (!rendered) return match;
+    const stashRendered = (rendered) => {
       const token = `@@ASTER_ADVANCED_${blocks.length}@@`;
       blocks.push(rendered);
       return `\n${token}\n`;
     };
-    source = source.replace(/```(?:advanced[-_](?:markdown[-_]?)?|aster[-_])?(geometry|chart|math)\s*\n([\s\S]*?)```/gi, addBlock);
-    source = source.replace(/:::advanced[-_]?(?:markdown[-_]?)?(geometry|chart|math)\s*\n([\s\S]*?)\n:::/gi, addBlock);
+    const addBlock = (match, command, rawSpec) => {
+      const rendered = renderAdvancedBlock(command.toLowerCase(), rawSpec);
+      return rendered ? stashRendered(rendered) : match;
+    };
+    const addDiagramJson = (match, rawSpec) => {
+      try {
+        const spec = JSON.parse(rawSpec.trim());
+        if (!spec || typeof spec !== 'object' || !Array.isArray(spec.nodes)) return match;
+        return stashRendered(renderAdvancedDiagram(spec));
+      } catch {
+        return match;
+      }
+    };
+    source = source.replace(/```(?:advanced[-_](?:markdown[-_]?)?|aster[-_])?(diagram|geometry|chart|math)\s*\n([\s\S]*?)```/gi, addBlock);
+    source = source.replace(/:::advanced[-_]?(?:markdown[-_]?)?(diagram|geometry|chart|math)\s*\n([\s\S]*?)\n:::/gi, addBlock);
+    source = source.replace(/```(?:json)?\s*\n([\s\S]*?)```/gi, addDiagramJson);
+    source = source.split(/\n{2,}/).map((chunk) => {
+      const trimmed = chunk.trim();
+      if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return chunk;
+      return addDiagramJson(chunk, trimmed);
+    }).join('\n\n');
     return { source, blocks };
   }
 
@@ -773,6 +846,7 @@
     const labels = tools.map((tool) => {
       if (tool.name === 'advanced_markdown_search') return 'Commande Advanced Markdown consultée';
       if (tool.name === 'advanced_markdown') {
+        if (tool.command === 'diagram') return 'Schéma construit';
         if (tool.command === 'geometry') return 'Schéma géométrique construit';
         if (tool.command === 'chart') return 'Graphique construit';
         if (tool.command === 'math') return 'Bloc mathématique construit';

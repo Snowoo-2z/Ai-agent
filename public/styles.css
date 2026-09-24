@@ -409,11 +409,15 @@ kbd { padding: 2px 5px; border: 1px solid var(--border-strong); border-radius: 4
 .advanced-visual-wrap { overflow: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-soft); }
 .advanced-svg { display: block; width: 100%; min-width: 420px; height: auto; color: var(--muted); }
 .geometry-svg { min-height: 220px; }
+.diagram-svg { min-height: 220px; }
 .advanced-grid-line { stroke: var(--border); stroke-width: .45; vector-effect: non-scaling-stroke; }
 .advanced-axis-line { stroke: var(--muted-strong); stroke-width: .8; opacity: .7; vector-effect: non-scaling-stroke; }
 .advanced-polygon { stroke-width: 1.3; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
 .advanced-segment { fill: none; stroke-width: 1.8; vector-effect: non-scaling-stroke; }
-.advanced-segment.dashed { stroke-dasharray: 5 4; }
+.advanced-segment.dashed, .advanced-diagram-edge.dashed { stroke-dasharray: 5 4; }
+.advanced-diagram-edge { fill: none; stroke-width: 1.7; vector-effect: non-scaling-stroke; }
+.advanced-diagram-node { stroke-width: 1.5; vector-effect: non-scaling-stroke; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .1)); }
+.advanced-diagram-label { fill: var(--text); font-family: var(--font-sans); font-size: 11px; font-weight: 800; }
 .advanced-circle { stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .advanced-point { stroke: var(--surface-solid); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
 .advanced-point-label, .advanced-shape-label, .advanced-axis-label { fill: var(--muted-strong); font-family: var(--font-sans); font-size: 4px; }

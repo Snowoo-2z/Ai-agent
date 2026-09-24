@@ -67,6 +67,7 @@ Le dépôt qui héberge l'application et le dépôt utilisé comme base de donn�
 
 Mistral reçoit la liste complète des tools à chaque appel. Pour les demandes graphiques, l’IA peut d’abord utiliser `advanced_markdown_search` pour découvrir les commandes, puis `advanced_markdown` pour produire un bloc structuré. Le frontend reconnaît ces blocs et les rend sans exécuter de HTML ou de JavaScript fourni par le modèle :
 
+- `diagram` : schémas SVG de flux avec nœuds, connexions, flèches et libellés ;
 - `geometry` : figures SVG avec grille, axes, points, segments, polygones et cercles ;
 - `chart` : graphiques SVG `line`, `bar` ou `scatter` avec plusieurs séries ;
 - `math` : formule, étapes et résultat dans une carte mathématique lisible.
