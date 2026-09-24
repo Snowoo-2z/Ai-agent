@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0b1020">
+    <meta name="description" content="Aster, votre espace de conversation avec une IA Mistral.">
+    <title>Aster — Chat IA</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <svg class="svg-sprite" aria-hidden="true" focusable="false">
+      <symbol id="icon-spark" viewBox="0 0 24 24"><path d="m12 2 1.35 6.65L20 10l-6.65 1.35L12 18l-1.35-6.65L4 10l6.65-1.35L12 2Z"/><path d="m19 15 .55 2.45L22 18l-2.45.55L19 21l-.55-2.45L16 18l2.45-.55L19 15Z"/></symbol>
+      <symbol id="icon-aster" viewBox="0 0 24 24"><path d="M12 3.5v5M12 15.5v5M3.5 12h5M15.5 12h5M6 6l3.55 3.55M14.45 14.45 18 18M18 6l-3.55 3.55M9.55 14.45 6 18"/><circle cx="12" cy="12" r="2.05"/></symbol>
+      <symbol id="icon-orbit" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><ellipse cx="12" cy="12" rx="9" ry="4.5" transform="rotate(-28 12 12)"/><path d="M12 3v2M12 19v2"/></symbol>
+      <symbol id="icon-bloom" viewBox="0 0 24 24"><path d="M12 11.2C8.8 2.1 3 4.3 5.4 8.4c-5.3-.7-5.8 5.4-.8 5.1-2.4 4.1 3.4 6.3 6.1-1.9 2.7 8.2 8.5 6 6.1 1.9 5 .3 4.5-5.8-.8-5.1C21 4.3 15.2 2.1 12 11.2Z"/><circle cx="12" cy="12" r="1.5"/></symbol>
+      <symbol id="icon-prism" viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></symbol>
+      <symbol id="icon-pixel-star" viewBox="0 0 24 24"><g><rect x="10" y="2" width="4" height="4"/><rect x="8" y="6" width="8" height="4"/><rect x="2" y="10" width="8" height="4"/><rect x="14" y="10" width="8" height="4"/><rect x="6" y="14" width="12" height="4"/><rect x="10" y="18" width="4" height="4"/></g></symbol>
+      <symbol id="icon-pixel-orbit" viewBox="0 0 24 24"><g><rect x="10" y="2" width="4" height="4"/><rect x="4" y="6" width="4" height="4"/><rect x="16" y="6" width="4" height="4"/><rect x="2" y="10" width="4" height="4"/><rect x="18" y="10" width="4" height="4"/><rect x="4" y="14" width="4" height="4"/><rect x="16" y="14" width="4" height="4"/><rect x="10" y="18" width="4" height="4"/><rect x="8" y="10" width="8" height="4"/></g></symbol>
+      <symbol id="icon-pixel-bloom" viewBox="0 0 24 24"><g><rect x="10" y="2" width="4" height="6"/><rect x="4" y="6" width="6" height="6"/><rect x="14" y="6" width="6" height="6"/><rect x="2" y="12" width="8" height="4"/><rect x="14" y="12" width="8" height="4"/><rect x="6" y="16" width="6" height="6"/><rect x="12" y="16" width="6" height="6"/><rect x="10" y="10" width="4" height="4"/></g></symbol>
+      <symbol id="icon-pixel-heart" viewBox="0 0 24 24"><g><rect x="4" y="5" width="6" height="4"/><rect x="14" y="5" width="6" height="4"/><rect x="2" y="9" width="20" height="6"/><rect x="6" y="15" width="12" height="4"/><rect x="10" y="19" width="4" height="3"/></g></symbol>
+      <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M4.22 6.22l2.83 2.83M16.95 14.95l2.83 2.83M3 12h4M17 12h4M4.22 17.78l2.83-2.83M16.95 9.05l2.83-2.83"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+      <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="icon-message" viewBox="0 0 24 24"><path d="M19 4H5a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h2.5L12 21l4.5-3H19a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3Z"/></symbol>
+      <symbol id="icon-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+      <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M20.3 15.2A8.5 8.5 0 0 1 8.8 3.7 8.5 8.5 0 1 0 20.3 15.2Z"/></symbol>
+      <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></symbol>
+      <symbol id="icon-send" viewBox="0 0 24 24"><path d="m21 3-7.2 18-3.25-7.55L3 10.2 21 3Z"/><path d="M10.55 13.45 21 3"/></symbol>
+      <symbol id="icon-logout" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-5"/></symbol>
+      <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"/></symbol>
+      <symbol id="icon-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></symbol>
+      <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+      <symbol id="icon-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
+      <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+      <symbol id="icon-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+    </svg>
+
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+
+    <main id="auth-view" class="auth-layout">
+      <section class="auth-showcase" aria-label="Présentation d’Aster">
+        <div class="brand brand-large">
+          <span class="brand-mark"><svg class="icon" data-aster-logo aria-hidden="true"><use data-aster-use href="#icon-aster"></use></svg></span>
+          <span>Aster</span>
+        </div>
+        <div class="showcase-copy">
+          <p class="eyebrow">VOTRE SECOND ESPRIT</p>
+          <h1>Les bonnes idées commencent par une <em>conversation.</em></h1>
+          <p class="showcase-description">Un espace calme pour réfléchir, créer et avancer avec une intelligence artificielle qui vous suit vraiment.</p>
+        </div>
+        <div class="showcase-orbit" aria-hidden="true">
+          <div class="orbit orbit-large"></div>
+          <div class="orbit orbit-small"></div>
+          <div class="orbit-core"><svg class="icon" data-aster-logo aria-hidden="true"><use data-aster-use href="#icon-aster"></use></svg></div>
+          <span class="orbit-dot dot-one"></span>
+          <span class="orbit-dot dot-two"></span>
+          <span class="orbit-dot dot-three"></span>
+        </div>
+        <div class="showcase-footnote"><span class="status-dot"></span> Propulsé par Mistral 8B</div>
+      </section>
+
+      <section class="auth-panel">
+        <div class="auth-mobile-brand brand">
+          <span class="brand-mark"><svg class="icon" data-aster-logo aria-hidden="true"><use data-aster-use href="#icon-aster"></use></svg></span>
+          <span>Aster</span>
+        </div>
+        <div class="auth-card">
+          <div class="auth-heading">
+            <p class="eyebrow">ESPACE PERSONNEL</p>
+            <h2 id="auth-title">Ravi de vous revoir.</h2>
+            <p id="auth-subtitle">Connectez-vous pour retrouver vos conversations.</p>
+          </div>
+
+          <div class="auth-tabs" role="tablist" aria-label="Authentification">
+            <button class="auth-tab active" type="button" role="tab" aria-selected="true" data-auth-tab="login">Connexion</button>
+            <button class="auth-tab" type="button" role="tab" aria-selected="false" data-auth-tab="register">Créer un compte</button>
+          </div>
+
+          <div id="auth-alert" class="form-alert" role="alert" aria-live="polite"></div>
+
+          <form id="login-form" class="auth-form" novalidate>
+            <label class="field-label" for="login-pseudo">Pseudo</label>
+            <div class="input-wrap">
+              <svg class="input-icon"><use href="#icon-spark"></use></svg>
+              <input id="login-pseudo" name="pseudo" type="text" autocomplete="username" placeholder="votre.pseudo" required maxlength="24">
+            </div>
+            <label class="field-label" for="login-password">Mot de passe</label>
+            <div class="input-wrap">
+              <svg class="input-icon"><use href="#icon-lock"></use></svg>
+              <input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required>
+              <button class="input-action password-toggle" type="button" data-password-target="login-password" aria-label="Afficher le mot de passe"><svg class="icon"><use href="#icon-eye"></use></svg></button>
+            </div>
+            <button class="primary-button auth-submit" type="submit"><span>Ouvrir mon espace</span><svg class="icon"><use href="#icon-arrow"></use></svg></button>
+          </form>
+
+          <form id="register-form" class="auth-form hidden" novalidate>
+            <label class="field-label" for="register-pseudo">Pseudo</label>
+            <div class="input-wrap">
+              <svg class="input-icon"><use href="#icon-spark"></use></svg>
+              <input id="register-pseudo" name="pseudo" type="text" autocomplete="username" placeholder="votre.pseudo" required maxlength="24">
+            </div>
+            <label class="field-label" for="register-email">Adresse email</label>
+            <div class="input-wrap">
+              <svg class="input-icon"><use href="#icon-mail"></use></svg>
+              <input id="register-email" name="email" type="email" autocomplete="email" placeholder="vous@exemple.com" required maxlength="160">
+            </div>
+            <label class="field-label" for="register-password">Mot de passe <span>8 caractères minimum</span></label>
+            <div class="input-wrap">
+              <svg class="input-icon"><use href="#icon-lock"></use></svg>
+              <input id="register-password" name="password" type="password" autocomplete="new-password" placeholder="••••••••" required minlength="8">
+              <button class="input-action password-toggle" type="button" data-password-target="register-password" aria-label="Afficher le mot de passe"><svg class="icon"><use href="#icon-eye"></use></svg></button>
+            </div>
+            <button class="primary-button auth-submit" type="submit"><span>Créer mon espace</span><svg class="icon"><use href="#icon-arrow"></use></svg></button>
+            <p class="terms-note">En continuant, vous acceptez de garder vos identifiants privés.</p>
+          </form>
+          <p class="auth-footer">Vos conversations vous appartiennent. <span>✦</span></p>
+        </div>
+      </section>
+    </main>
+
+    <section id="app-view" class="app-view hidden" aria-label="Application Aster">
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-top">
+          <div class="brand">
+            <span class="brand-mark"><svg class="icon" data-aster-logo aria-hidden="true"><use data-aster-use href="#icon-aster"></use></svg></span>
+            <span>Aster</span>
+          </div>
+          <button id="close-sidebar" class="icon-button mobile-only" type="button" aria-label="Fermer le menu"><svg class="icon"><use href="#icon-arrow"></use></svg></button>
+        </div>
+        <button id="new-chat-button" class="new-chat-button" type="button"><span class="new-chat-icon"><svg class="icon"><use href="#icon-plus"></use></svg></span><span>Nouvelle conversation</span><kbd>N</kbd></button>
+        <div class="sidebar-label"><span>VOS CONVERSATIONS</span><span id="conversation-count" class="count-pill">0</span></div>
+        <nav id="conversation-list" class="conversation-list" aria-label="Vos conversations"></nav>
+        <div id="sidebar-empty" class="sidebar-empty"><svg class="icon"><use href="#icon-message"></use></svg><span>Vos conversations<br>apparaîtront ici.</span></div>
+        <div class="sidebar-bottom">
+          <div class="privacy-note"><span class="privacy-icon"><svg class="icon"><use href="#icon-lock"></use></svg></span><span><strong>Vos données, votre espace</strong><small>Historique privé et chiffré</small></span></div>
+          <div class="user-row">
+            <div id="user-avatar" class="avatar">A</div>
+            <div class="user-details"><strong id="user-name">Vous</strong><span id="user-email">—</span></div>
+            <button id="settings-button" class="icon-button settings-user-button" type="button" aria-label="Ouvrir les paramètres" title="Paramètres" aria-expanded="false"><svg class="icon"><use href="#icon-settings"></use></svg></button>
+            <button id="logout-button" class="icon-button" type="button" aria-label="Se déconnecter" title="Se déconnecter"><svg class="icon"><use href="#icon-logout"></use></svg></button>
+          </div>
+        </div>
+      </aside>
+      <div id="mobile-scrim" class="mobile-scrim"></div>
+      <div id="settings-scrim" class="settings-scrim"></div>
+      <aside id="settings-drawer" class="settings-drawer" aria-hidden="true">
+        <div class="settings-header">
+          <div>
+            <p class="eyebrow">PERSONNALISATION</p>
+            <h2>Votre Aster</h2>
+          </div>
+          <button id="close-settings" class="icon-button" type="button" aria-label="Fermer les paramètres"><svg class="icon"><use href="#icon-close"></use></svg></button>
+        </div>
+        <p class="settings-description">Choisissez un vrai style de logo et son animation. Chaque icône est disponible en version vectorielle et pixel art, avec 12 animations.</p>
+        <div class="settings-section">
+          <div class="settings-label"><span>Icône d’Aster</span><span id="selected-logo-label">Aster</span></div>
+          <div class="logo-options" role="radiogroup" aria-label="Choisir l’icône d’Aster">
+            <button class="logo-option active" type="button" role="radio" aria-checked="true" data-logo-choice="aster" aria-label="Logo Aster"><svg class="icon"><use href="#icon-aster"></use></svg><span>Aster</span></button>
+            <button class="logo-option" type="button" role="radio" aria-checked="false" data-logo-choice="orbit" aria-label="Logo orbite"><svg class="icon"><use href="#icon-orbit"></use></svg><span>Orbite</span></button>
+            <button class="logo-option" type="button" role="radio" aria-checked="false" data-logo-choice="bloom" aria-label="Logo fleur"><svg class="icon"><use href="#icon-bloom"></use></svg><span>Bloom</span></button>
+            <button class="logo-option" type="button" role="radio" aria-checked="false" data-logo-choice="prism" aria-label="Logo prisme"><svg class="icon"><use href="#icon-prism"></use></svg><span>Prisme</span></button>
+            <button class="logo-option" type="button" role="radio" aria-checked="false" data-logo-choice="pixel-star" aria-label="Logo pixel étoile"><svg class="icon pixel-icon"><use href="#icon-pixel-star"></use></svg><span>Pixel étoile</span></button>
+            <button class="logo-option" type="button" role="radio" aria-checked="false" data-logo-choice="pixel-orbit" aria-label="Logo pixel orbite"><svg class="icon pixel-icon"><use href="#icon-pixel-orbit"></use></svg><span>Pixel orbite</span></button>
+            <button class="logo-option" type="button" role="radio" aria-checked="false" data-logo-choice="pixel-bloom" aria-label="Logo pixel fleur"><svg class="icon pixel-icon"><use href="#icon-pixel-bloom"></use></svg><span>Pixel bloom</span></button>
+            <button class="logo-option" type="button" role="radio" aria-checked="false" data-logo-choice="pixel-heart" aria-label="Logo pixel cœur"><svg class="icon pixel-icon"><use href="#icon-pixel-heart"></use></svg><span>Pixel cœur</span></button>
+          </div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-label"><span>Animation</span><span id="selected-animation-label">Respiration</span></div>
+          <div class="animation-options" role="radiogroup" aria-label="Choisir l’animation du logo">
+            <button class="animation-option active" type="button" role="radio" aria-checked="true" data-animation-choice="breathe"><span class="animation-preview logo-motion-breathe">✦</span><span>Respiration</span></button>
+            <button class="animation-option" type="button" role="radio" aria-checked="false" data-animation-choice="float"><span class="animation-preview logo-motion-float">✦</span><span>Flottement</span></button>
+            <button class="animation-option" type="button" role="radio" aria-checked="false" data-animation-choice="spin"><span class="animation-preview logo-motion-spin">✦</span><span>Rotation</span></button>
+            <button class="animation-option" type="button" role="radio" aria-checked="false" data-animation-choice="pulse"><span class="animation-preview logo-motion-pulse">✦</span><span>Impulsion</span></button>
+            <button class="animation-option" type="button" role="radio" aria-checked="false" data-animation-choice="bounce"><span class="animation-preview logo-motion-bounce">✦</span><span>Rebond</span></button>
+            <button class="animation-option" type="button" role="radio" aria-checked="false" data-animation-choice="wiggle"><span class="animation-preview logo-motion-wiggle">✦</span><span>Vibration</span></button>
+            <button class="animation-option" type="button" role="radio" aria-checked="false" data-animation-choice="twinkle"><span class="animation-preview logo-motion-twinkle">✦</span><span>Scintillement</span></button>
+            <button class="animation-option" type="button" role="radio" aria-checked="false" data-animation-choice="glitch"><span class="animation-preview logo-motion-glitch">✦</span><span>Glitch</span></button>
+            <button class="animation-option" type="button" role="radio" aria-checked="false" data-animation-choice="drift"><span class="animation-preview logo-motion-drift">✦</span><span>Dérive</span></button>
+            <button class="animation-option" type="button" role="radio" aria-checked="false" data-animation-choice="swing"><span class="animation-preview logo-motion-swing">✦</span><span>Balancement</span></button>
+            <button class="animation-option" type="button" role="radio" aria-checked="false" data-animation-choice="sparkle"><span class="animation-preview logo-motion-sparkle">✦</span><span>Étincelle</span></button>
+            <button class="animation-option" type="button" role="radio" aria-checked="false" data-animation-choice="wave"><span class="animation-preview logo-motion-wave">✦</span><span>Onde</span></button>
+          </div>
+        </div>
+        <div class="settings-tip"><span class="settings-tip-icon"><svg class="icon"><use href="#icon-spark"></use></svg></span><span><strong>96 combinaisons disponibles</strong><small>Votre choix est conservé sur cet appareil.</small></span></div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div class="topbar-title-group">
+            <button id="open-sidebar" class="icon-button mobile-only" type="button" aria-label="Ouvrir le menu"><svg class="icon"><use href="#icon-menu"></use></svg></button>
+            <div class="topbar-title"><span class="live-indicator"></span><span id="active-title">Nouvelle conversation</span></div>
+          </div>
+          <div class="topbar-actions">
+            <button id="theme-button" class="icon-button" type="button" aria-label="Changer de thème" title="Changer de thème"><svg class="icon theme-icon"><use href="#icon-sun"></use></svg></button>
+            <button id="delete-chat-button" class="icon-button danger-button" type="button" aria-label="Supprimer la conversation" title="Supprimer la conversation" disabled><svg class="icon"><use href="#icon-trash"></use></svg></button>
+          </div>
+        </header>
+
+        <div id="chat-scroll" class="chat-scroll">
+          <section id="welcome-view" class="welcome-view">
+            <div class="welcome-orb"><svg class="icon" data-aster-logo aria-hidden="true"><use data-aster-use href="#icon-aster"></use></svg></div>
+            <p class="eyebrow">BONJOUR <span id="welcome-name">À VOUS</span></p>
+            <h1>Qu'allons-nous<br><em>imaginer</em> aujourd'hui&nbsp;?</h1>
+            <p class="welcome-description">Posez une question, partagez une idée ou commencez simplement par quelques mots.</p>
+            <div class="suggestion-grid">
+              <button class="suggestion-card" type="button" data-suggestion="Aide-moi à structurer une idée créative"><span class="suggestion-icon peach">✦</span><span><strong>Faire émerger une idée</strong><small>Brainstormer sans limites</small></span><svg class="icon"><use href="#icon-arrow"></use></svg></button>
+              <button class="suggestion-card" type="button" data-suggestion="Explique-moi un sujet complexe de façon simple"><span class="suggestion-icon blue">◌</span><span><strong>Comprendre simplement</strong><small>Rendre le complexe limpide</small></span><svg class="icon"><use href="#icon-arrow"></use></svg></button>
+              <button class="suggestion-card" type="button" data-suggestion="Aide-moi à écrire un message professionnel et chaleureux"><span class="suggestion-icon violet">⌁</span><span><strong>Trouver les bons mots</strong><small>Écrire avec justesse</small></span><svg class="icon"><use href="#icon-arrow"></use></svg></button>
+              <button class="suggestion-card" type="button" data-suggestion="Donne-moi trois idées pour mieux organiser ma semaine"><span class="suggestion-icon mint">◒</span><span><strong>Organiser mes pensées</strong><small>Passer de l'intention à l'action</small></span><svg class="icon"><use href="#icon-arrow"></use></svg></button>
+            </div>
+          </section>
+          <section id="messages" class="messages hidden" aria-live="polite"></section>
+          <div id="typing-indicator" class="typing-indicator hidden" aria-label="Aster rédige une réponse">
+            <div class="assistant-avatar small"><svg class="icon" data-aster-logo aria-hidden="true"><use data-aster-use href="#icon-aster"></use></svg></div>
+            <div class="typing-bubble"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+
+        <footer class="composer-area">
+          <form id="message-form" class="composer">
+            <textarea id="message-input" rows="1" maxlength="12000" placeholder="Écrivez votre message à Aster…" aria-label="Votre message"></textarea>
+            <div class="composer-bottom">
+              <span class="composer-hint"><kbd>Entrée</kbd> pour envoyer <span>·</span> <kbd>Maj + Entrée</kbd> pour sauter une ligne</span>
+              <button id="send-button" class="send-button" type="submit" aria-label="Envoyer le message"><svg class="icon"><use href="#icon-send"></use></svg></button>
+            </div>
+          </form>
+          <p class="disclaimer">Aster peut faire des erreurs. Vérifiez les informations importantes.</p>
+        </footer>
+      </main>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js" defer></script>
+  </body>
+</html>
