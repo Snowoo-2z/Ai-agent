@@ -81,7 +81,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
 .brand-mark .icon { width: 21px; height: 21px; stroke-width: 1.6; }
 .brand-mark .character-icon { width: 24px; height: 24px; }
 .assistant-avatar .character-icon { width: 21px; height: 21px; }
-.pixel-icon { fill: currentColor; stroke: none; shape-rendering: crispEdges; stroke-width: 0; }
+.pixel-icon { fill: currentColor; stroke: none; shape-rendering: crispEdges; image-rendering: pixelated; stroke-width: 0; }
+.logo-option[data-logo-choice^="pixel-"] .icon { image-rendering: pixelated; }
+.logo-option[data-logo-choice^="pixel-"] .character-icon { padding: 1px; }
 .character-icon { overflow: visible; filter: drop-shadow(0 5px 5px color-mix(in srgb, var(--companion-color, var(--accent)) 18%, transparent)); }
 [data-aster-logo][data-companion="cat"] { --companion-color: #f7b267; }
 [data-aster-logo][data-companion="fox"] { --companion-color: #f28c52; }
@@ -383,19 +385,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border-strong); border-radius: 4
 .animation-option.active { border-color: rgba(169,155,255,.5); background: var(--accent-soft); color: var(--text); }
 .animation-option > span:last-child { font-size: 9px; font-weight: 700; }
 .animation-preview { display: grid; width: 24px; height: 24px; flex: 0 0 24px; place-items: center; border-radius: 7px; background: var(--surface-raised); color: var(--accent); font-size: 17px; line-height: 1; }
-.automatic-animation-card { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 12px; border: 1px solid rgba(105,221,180,.25); border-radius: 11px; background: rgba(105,221,180,.07); }
-.automatic-animation-icon { position: relative; display: grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; border-radius: 9px; background: rgba(105,221,180,.13); color: var(--success); }
-.automatic-animation-icon .icon { width: 16px; height: 16px; }
-.automatic-signal { position: absolute; top: 5px; right: 5px; width: 5px; height: 5px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success); animation: logo-pulse 1.6s ease-in-out infinite; }
-.automatic-animation-card strong, .automatic-animation-card small { display: block; }
-.automatic-animation-card strong { color: var(--muted-strong); font-size: 10px; }
-.automatic-animation-card small { margin-top: 3px; color: var(--muted); font-size: 9px; line-height: 1.45; }
-.settings-tip { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface-soft); }
-.settings-tip-icon { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 8px; background: var(--accent-soft); color: var(--accent); }
-.settings-tip-icon .icon { width: 15px; height: 15px; }
-.settings-tip strong, .settings-tip small { display: block; }
-.settings-tip strong { color: var(--muted-strong); font-size: 10px; }
-.settings-tip small { margin-top: 3px; color: var(--muted); font-size: 9px; }
+
 
 @media (max-width: 720px) {
   .topbar-title-group { gap: 7px; }
