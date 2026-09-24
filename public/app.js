@@ -49,7 +49,6 @@
     userEmail: $('#user-email'),
     userAvatar: $('#user-avatar'),
     deleteButton: $('#delete-chat-button'),
-    themeButton: $('#theme-button'),
     settingsButton: $('#settings-button'),
     settingsDrawer: $('#settings-drawer'),
     settingsScrim: $('#settings-scrim'),
@@ -295,9 +294,6 @@
   function setTheme(theme) {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem('aster-theme', theme);
-    const use = elements.themeButton?.querySelector('use');
-    if (use) use.setAttribute('href', theme === 'dark' ? '#icon-sun' : '#icon-moon');
-    elements.themeButton?.setAttribute('aria-label', theme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre');
   }
 
   const interfaceStyles = {
@@ -707,9 +703,6 @@
     elements.mobileScrim.addEventListener('click', closeSidebar);
     $('#logout-button').addEventListener('click', logout);
     elements.deleteButton.addEventListener('click', deleteActiveConversation);
-    elements.themeButton.addEventListener('click', () => {
-      setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
-    });
     elements.settingsButton.addEventListener('click', openSettings);
     $('#close-settings').addEventListener('click', closeSettings);
     elements.settingsScrim.addEventListener('click', closeSettings);
