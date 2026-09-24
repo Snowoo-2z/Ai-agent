@@ -78,8 +78,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
 
 .brand { display: inline-flex; align-items: center; gap: 11px; color: var(--text); font-size: 20px; font-weight: 800; letter-spacing: -0.04em; }
 .brand-mark { display: grid; width: 31px; height: 31px; place-items: center; border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; background: linear-gradient(140deg, #b4a9ff, #7866ec); color: #fff; box-shadow: 0 8px 18px rgba(132, 112, 245, 0.3); }
-.brand-mark .icon { width: 18px; height: 18px; stroke-width: 1.6; }
+.brand-mark .icon { width: 21px; height: 21px; stroke-width: 1.6; }
+.brand-mark .character-icon { width: 24px; height: 24px; }
+.assistant-avatar .character-icon { width: 21px; height: 21px; }
 .pixel-icon { fill: currentColor; stroke: none; shape-rendering: crispEdges; stroke-width: 0; }
+.character-icon { overflow: visible; }
+.character-options .logo-option .icon { width: 36px; height: 36px; padding: 2px; background: var(--surface-raised); }
 [data-aster-logo], .animation-preview { transform-box: fill-box; transform-origin: center; }
 .logo-motion-breathe { animation: logo-breathe 2.8s ease-in-out infinite; }
 .logo-motion-float { animation: logo-float 3.2s ease-in-out infinite; }
@@ -347,7 +351,14 @@ kbd { padding: 2px 5px; border: 1px solid var(--border-strong); border-radius: 4
 .animation-option.active { border-color: rgba(169,155,255,.5); background: var(--accent-soft); color: var(--text); }
 .animation-option > span:last-child { font-size: 9px; font-weight: 700; }
 .animation-preview { display: grid; width: 24px; height: 24px; flex: 0 0 24px; place-items: center; border-radius: 7px; background: var(--surface-raised); color: var(--accent); font-size: 17px; line-height: 1; }
-.settings-tip { display: flex; align-items: center; gap: 10px; margin-top: 20px; padding: 12px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface-soft); }
+.automatic-animation-card { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 12px; border: 1px solid rgba(105,221,180,.25); border-radius: 11px; background: rgba(105,221,180,.07); }
+.automatic-animation-icon { position: relative; display: grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; border-radius: 9px; background: rgba(105,221,180,.13); color: var(--success); }
+.automatic-animation-icon .icon { width: 16px; height: 16px; }
+.automatic-signal { position: absolute; top: 5px; right: 5px; width: 5px; height: 5px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success); animation: logo-pulse 1.6s ease-in-out infinite; }
+.automatic-animation-card strong, .automatic-animation-card small { display: block; }
+.automatic-animation-card strong { color: var(--muted-strong); font-size: 10px; }
+.automatic-animation-card small { margin-top: 3px; color: var(--muted); font-size: 9px; line-height: 1.45; }
+.settings-tip { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface-soft); }
 .settings-tip-icon { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 8px; background: var(--accent-soft); color: var(--accent); }
 .settings-tip-icon .icon { width: 15px; height: 15px; }
 .settings-tip strong, .settings-tip small { display: block; }

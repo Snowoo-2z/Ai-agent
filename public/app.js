@@ -9,8 +9,10 @@
     loading: false,
     toastTimer: null,
     authMode: 'login',
-    logo: 'aster',
-    animation: 'breathe'
+    logo: 'cat',
+    autoAnimation: 'breathe',
+    autoAnimationTimer: null,
+    autoAnimationStep: 0
   };
 
   const $ = (selector, parent = document) => parent.querySelector(selector);
@@ -18,7 +20,7 @@
   const icon = (name, className = 'icon') => `<svg class="${className}"><use href="#icon-${name}"></use></svg>`;
   const logoIcon = (className = 'icon') => {
     const pixel = state.logo.startsWith('pixel-') ? ' pixel-icon' : '';
-    return `<svg class="${className}${pixel} logo-motion-${state.animation}" data-aster-logo aria-hidden="true"><use data-aster-use href="#icon-${state.logo}"></use></svg>`;
+    return `<svg class="${className} character-icon${pixel} logo-motion-${state.autoAnimation}" data-aster-logo aria-hidden="true"><use data-aster-use href="#icon-${state.logo}"></use></svg>`;
   };
 
   const elements = {
@@ -51,7 +53,6 @@
     settingsDrawer: $('#settings-drawer'),
     settingsScrim: $('#settings-scrim'),
     selectedLogoLabel: $('#selected-logo-label'),
-    selectedAnimationLabel: $('#selected-animation-label'),
     toast: $('#toast'),
     chatScroll: $('#chat-scroll')
   };
@@ -297,74 +298,72 @@
     elements.themeButton?.setAttribute('aria-label', theme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre');
   }
 
-  const logoLabels = {
-    aster: 'Aster',
-    orbit: 'Orbite',
-    bloom: 'Bloom',
-    prism: 'Prisme',
-    'pixel-star': 'Pixel étoile',
-    'pixel-orbit': 'Pixel orbite',
-    'pixel-bloom': 'Pixel bloom',
-    'pixel-heart': 'Pixel cœur'
+  const characterLabels = {
+    cat: 'Chat',
+    fox: 'Renard',
+    robot: 'Robot',
+    bunny: 'Lapin',
+    'pixel-cat': 'Chat pixel',
+    'pixel-fox': 'Renard pixel',
+    'pixel-robot': 'Robot pixel',
+    'pixel-bunny': 'Lapin pixel'
   };
 
-  const animationLabels = {
-    breathe: 'Respiration',
-    float: 'Flottement',
-    spin: 'Rotation',
-    pulse: 'Impulsion',
-    bounce: 'Rebond',
-    wiggle: 'Vibration',
-    twinkle: 'Scintillement',
-    glitch: 'Glitch',
-    drift: 'Dérive',
-    swing: 'Balancement',
-    sparkle: 'Étincelle',
-    wave: 'Onde'
+  const animationNames = ['breathe', 'float', 'spin', 'pulse', 'bounce', 'wiggle', 'twinkle', 'glitch', 'drift', 'swing', 'sparkle', 'wave'];
+  const characterAnimations = {
+    cat: ['breathe', 'twinkle', 'float', 'bounce', 'wiggle', 'sparkle', 'swing'],
+    fox: ['float', 'drift', 'wiggle', 'bounce', 'sparkle', 'twinkle', 'swing'],
+    robot: ['pulse', 'spin', 'glitch', 'wave', 'float', 'sparkle', 'breathe'],
+    bunny: ['breathe', 'bounce', 'swing', 'twinkle', 'float', 'wiggle', 'sparkle'],
+    'pixel-cat': ['bounce', 'twinkle', 'glitch', 'float', 'wiggle', 'sparkle'],
+    'pixel-fox': ['drift', 'bounce', 'wiggle', 'twinkle', 'glitch', 'float'],
+    'pixel-robot': ['glitch', 'pulse', 'spin', 'wave', 'bounce', 'sparkle'],
+    'pixel-bunny': ['breathe', 'bounce', 'twinkle', 'swing', 'float', 'wiggle']
   };
 
   function applyLogoVisuals() {
     const isPixel = state.logo.startsWith('pixel-');
     $$('[data-aster-logo]').forEach((logo) => {
+      logo.classList.add('character-icon');
       logo.classList.toggle('pixel-icon', isPixel);
-      Object.keys(animationLabels).forEach((animation) => logo.classList.remove(`logo-motion-${animation}`));
-      logo.classList.add(`logo-motion-${state.animation}`);
+      animationNames.forEach((animation) => logo.classList.remove(`logo-motion-${animation}`));
+      logo.classList.add(`logo-motion-${state.autoAnimation}`);
     });
     $$('[data-aster-use]').forEach((use) => use.setAttribute('href', `#icon-${state.logo}`));
   }
 
-  function setLogo(logo) {
-    const validLogos = Object.keys(logoLabels);
-    state.logo = validLogos.includes(logo) ? logo : 'aster';
-    localStorage.setItem('aster-logo', state.logo);
+  function cycleAutomaticAnimation() {
+    const sequence = characterAnimations[state.logo] || characterAnimations.cat;
+    state.autoAnimation = sequence[state.autoAnimationStep % sequence.length];
+    state.autoAnimationStep += 1;
     applyLogoVisuals();
+  }
+
+  function startAutomaticAnimations() {
+    window.clearInterval(state.autoAnimationTimer);
+    state.autoAnimationStep = 0;
+    cycleAutomaticAnimation();
+    state.autoAnimationTimer = window.setInterval(cycleAutomaticAnimation, 3800);
+  }
+
+  function setLogo(character) {
+    const validCharacters = Object.keys(characterLabels);
+    state.logo = validCharacters.includes(character) ? character : 'cat';
+    localStorage.setItem('aster-logo', state.logo);
+    startAutomaticAnimations();
     $$('[data-logo-choice]').forEach((button) => {
       const active = button.dataset.logoChoice === state.logo;
       button.classList.toggle('active', active);
       button.setAttribute('aria-checked', String(active));
     });
-    if (elements.selectedLogoLabel) elements.selectedLogoLabel.textContent = logoLabels[state.logo];
-  }
-
-  function setLogoAnimation(animation) {
-    const validAnimations = Object.keys(animationLabels);
-    state.animation = validAnimations.includes(animation) ? animation : 'breathe';
-    localStorage.setItem('aster-logo-animation', state.animation);
-    applyLogoVisuals();
-    $$('[data-animation-choice]').forEach((button) => {
-      const active = button.dataset.animationChoice === state.animation;
-      button.classList.toggle('active', active);
-      button.setAttribute('aria-checked', String(active));
-    });
-    if (elements.selectedAnimationLabel) elements.selectedAnimationLabel.textContent = animationLabels[state.animation];
+    if (elements.selectedLogoLabel) elements.selectedLogoLabel.textContent = characterLabels[state.logo];
   }
 
   function initialisePreferences() {
     const savedTheme = localStorage.getItem('aster-theme');
     const preferredTheme = window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
     setTheme(savedTheme || preferredTheme);
-    setLogo(localStorage.getItem('aster-logo') || 'aster');
-    setLogoAnimation(localStorage.getItem('aster-logo-animation') || 'breathe');
+    setLogo(localStorage.getItem('aster-logo') || 'cat');
   }
 
   function openSettings() {
@@ -683,7 +682,6 @@
     $('#close-settings').addEventListener('click', closeSettings);
     elements.settingsScrim.addEventListener('click', closeSettings);
     $$('[data-logo-choice]').forEach((button) => button.addEventListener('click', () => setLogo(button.dataset.logoChoice)));
-    $$('[data-animation-choice]').forEach((button) => button.addEventListener('click', () => setLogoAnimation(button.dataset.animationChoice)));
     elements.conversationList.addEventListener('click', (event) => {
       const button = event.target.closest('[data-conversation-id]');
       if (button) selectConversation(button.dataset.conversationId);
