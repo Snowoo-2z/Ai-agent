@@ -443,6 +443,180 @@ async function searchWeb(query) {
   return { provider: 'DuckDuckGo', query: cleanQuery, results };
 }
 
+const advancedMarkdownCommands = [
+  {
+    command: 'geometry',
+    aliases: ['figure', 'géométrie', 'geometrie'],
+    description: 'Construit une figure géométrique SVG avec grille, axes, points, segments, polygones et cercles.',
+    syntax: '```advanced-geometry\n{"width":100,"height":100,"polygons":[{"points":[[10,80],[50,10],[90,80]]}],"points":[{"x":50,"y":10,"label":"A"}]}\n```'
+  },
+  {
+    command: 'chart',
+    aliases: ['graphique', 'graphe', 'courbe'],
+    description: 'Construit un graphique SVG de type line, bar ou scatter à partir de séries numériques.',
+    syntax: '```advanced-chart\n{"type":"line","labels":["Jan","Fév","Mar"],"series":[{"name":"Série A","values":[12,19,15]}]}\n```'
+  },
+  {
+    command: 'math',
+    aliases: ['mathématiques', 'mathematiques', 'formule'],
+    description: 'Affiche une formule, une équation et ses étapes de résolution dans un bloc mathématique lisible.',
+    syntax: '```advanced-math\n{"expression":"a² + b² = c²","steps":["...","..."]}\n```'
+  }
+];
+
+function clampNumber(value, min, max, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
+}
+
+function advancedText(value, fallback = '', maxLength = 240) {
+  const text = String(value ?? fallback).trim();
+  return text.slice(0, maxLength);
+}
+
+function advancedPoint(value) {
+  if (Array.isArray(value)) {
+    return { x: clampNumber(value[0], -10000, 10000, 0), y: clampNumber(value[1], -10000, 10000, 0) };
+  }
+  if (!value || typeof value !== 'object') return null;
+  return {
+    x: clampNumber(value.x, -10000, 10000, 0),
+    y: clampNumber(value.y, -10000, 10000, 0),
+    label: advancedText(value.label, '', 48),
+    color: advancedText(value.color, '', 40)
+  };
+}
+
+function advancedPointList(values, max = 80) {
+  if (!Array.isArray(values)) return [];
+  return values.slice(0, max).map(advancedPoint).filter(Boolean);
+}
+
+function normalizeGeometrySpec(input = {}) {
+  const source = input && typeof input === 'object' ? input : {};
+  const width = clampNumber(source.width ?? source.viewBox?.width, 40, 10000, 100);
+  const height = clampNumber(source.height ?? source.viewBox?.height, 40, 10000, 100);
+  const points = advancedPointList(source.points);
+  const pointAt = (value) => {
+    if (Number.isInteger(value) && points[value]) return points[value];
+    return advancedPoint(value);
+  };
+  const normalizePair = (value) => {
+    if (!Array.isArray(value) || value.length < 2) return null;
+    const from = pointAt(value[0]);
+    const to = pointAt(value[1]);
+    return from && to ? { from, to, label: advancedText(value.label, '', 48), color: advancedText(value.color, '', 40), dashed: Boolean(value.dashed) } : null;
+  };
+  const segments = (Array.isArray(source.segments) ? source.segments : (source.edges || []))
+    .slice(0, 100)
+    .map((segment) => {
+      if (Array.isArray(segment)) return normalizePair(segment);
+      return normalizePair([segment?.from, segment?.to]) && {
+        ...normalizePair([segment?.from, segment?.to]),
+        label: advancedText(segment?.label, '', 48),
+        color: advancedText(segment?.color, '', 40),
+        dashed: Boolean(segment?.dashed)
+      };
+    })
+    .filter(Boolean);
+  const polygons = (Array.isArray(source.polygons) ? source.polygons : []).slice(0, 30).map((polygon) => ({
+    points: advancedPointList(polygon?.points || polygon, 80),
+    label: advancedText(polygon?.label, '', 48),
+    fill: advancedText(polygon?.fill, '', 40),
+    color: advancedText(polygon?.color || polygon?.stroke, '', 40)
+  })).filter((polygon) => polygon.points.length >= 3);
+  if (!polygons.length && ['triangle', 'polygon'].includes(String(source.shape || '').toLowerCase()) && points.length >= 3) {
+    polygons.push({ points, label: advancedText(source.label, '', 48), fill: advancedText(source.fill, '', 40), color: advancedText(source.color, '', 40) });
+  }
+  const circles = (Array.isArray(source.circles) ? source.circles : []).slice(0, 40).map((circle) => ({
+    center: advancedPoint(circle?.center || { x: circle?.cx, y: circle?.cy }),
+    radius: clampNumber(circle?.radius ?? circle?.r, 0.1, 10000, 10),
+    label: advancedText(circle?.label, '', 48),
+    color: advancedText(circle?.color || circle?.stroke, '', 40),
+    fill: advancedText(circle?.fill, '', 40)
+  })).filter((circle) => circle.center);
+  if (!circles.length && String(source.shape || '').toLowerCase() === 'circle' && source.center) {
+    circles.push({ center: advancedPoint(source.center), radius: clampNumber(source.radius, 0.1, 10000, 10), label: advancedText(source.label, '', 48), color: advancedText(source.color, '', 40), fill: advancedText(source.fill, '', 40) });
+  }
+  return {
+    width,
+    height,
+    title: advancedText(source.title, 'Figure géométrique', 120),
+    grid: source.grid === false ? false : { step: clampNumber(source.grid?.step, 1, 1000, 10) },
+    axes: source.axes !== false,
+    points: points.slice(0, 80),
+    segments,
+    polygons,
+    circles,
+    labels: Array.isArray(source.labels) ? source.labels.slice(0, 80).map((label) => ({
+      ...advancedPoint(label),
+      text: advancedText(label?.text || label?.label, '', 80)
+    })).filter((label) => label.text) : []
+  };
+}
+
+function normalizeChartSpec(input = {}) {
+  const source = input && typeof input === 'object' ? input : {};
+  const labels = (Array.isArray(source.labels) ? source.labels : []).slice(0, 60).map((label) => advancedText(label, '', 40));
+  const sourceSeries = Array.isArray(source.series) ? source.series : [];
+  const series = sourceSeries.slice(0, 8).map((item, index) => {
+    const values = (Array.isArray(item?.values) ? item.values : []).slice(0, labels.length || 60).map((value) => {
+      const number = Number(value);
+      return Number.isFinite(number) ? Math.round(number * 10000) / 10000 : null;
+    });
+    return {
+      name: advancedText(item?.name, `Série ${index + 1}`, 60),
+      values,
+      color: advancedText(item?.color, '', 40)
+    };
+  }).filter((item) => item.values.some((value) => value !== null));
+  return {
+    type: ['line', 'bar', 'scatter'].includes(source.type) ? source.type : 'line',
+    title: advancedText(source.title, 'Graphique', 120),
+    xLabel: advancedText(source.xLabel, '', 80),
+    yLabel: advancedText(source.yLabel, '', 80),
+    labels,
+    series
+  };
+}
+
+function normalizeMathSpec(input = {}) {
+  const source = input && typeof input === 'object' ? input : {};
+  return {
+    title: advancedText(source.title, 'Mathématiques', 120),
+    expression: advancedText(source.expression || source.formula, 'Expression mathématique', 1000),
+    steps: Array.isArray(source.steps) ? source.steps.slice(0, 20).map((step) => advancedText(step, '', 500)).filter(Boolean) : [],
+    result: advancedText(source.result, '', 500)
+  };
+}
+
+function searchAdvancedMarkdown(query) {
+  const cleanQuery = String(query || '').trim().slice(0, 160);
+  const terms = cleanQuery.toLowerCase().split(/\s+/).filter(Boolean);
+  const commands = advancedMarkdownCommands.filter((item) => !terms.length || terms.some((term) => [item.command, ...item.aliases, item.description].join(' ').toLowerCase().includes(term)));
+  return {
+    tool: 'Advanced Markdown',
+    query: cleanQuery,
+    commands: (commands.length ? commands : advancedMarkdownCommands).map(({ command, description, syntax }) => ({ command, description, syntax }))
+  };
+}
+
+function advancedMarkdownResult(command, specInput, title) {
+  const normalizedCommand = String(command || '').toLowerCase();
+  if (!['geometry', 'chart', 'math'].includes(normalizedCommand)) {
+    return { error: 'Commande Advanced Markdown inconnue. Utilise geometry, chart ou math.' };
+  }
+  const source = specInput && typeof specInput === 'object' ? { ...specInput } : {};
+  if (title) source.title = title;
+  const spec = normalizedCommand === 'geometry'
+    ? normalizeGeometrySpec(source)
+    : normalizedCommand === 'chart'
+      ? normalizeChartSpec(source)
+      : normalizeMathSpec(source);
+  const renderBlock = `\`\`\`advanced-${normalizedCommand}\n${JSON.stringify(spec)}\n\`\`\``;
+  return { tool: 'Advanced Markdown', command: normalizedCommand, spec, renderBlock };
+}
+
 const mistralTools = [
   {
     type: 'function',
@@ -464,6 +638,36 @@ const mistralTools = [
         additionalProperties: false
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'advanced_markdown_search',
+      description: 'Cherche dans le catalogue des commandes du tool Advanced Markdown. Utilise-le si tu dois découvrir la syntaxe d’une figure géométrique, d’un graphique ou d’un bloc mathématique.',
+      parameters: {
+        type: 'object',
+        properties: { query: { type: 'string', description: 'Le besoin à chercher, par exemple geometry, graphique ou formule.' } },
+        required: ['query'],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'advanced_markdown',
+      description: 'Construit un bloc Advanced Markdown sécurisé et directement affichable dans le chat. Utilise geometry pour les figures SVG, chart pour les graphiques et math pour les équations avec étapes.',
+      parameters: {
+        type: 'object',
+        properties: {
+          command: { type: 'string', enum: ['geometry', 'chart', 'math'], description: 'La commande Advanced Markdown à exécuter.' },
+          title: { type: 'string', description: 'Titre facultatif du bloc.' },
+          spec: { type: 'object', description: 'Paramètres structurés de la figure, du graphique ou de la formule.' }
+        },
+        required: ['command', 'spec'],
+        additionalProperties: false
+      }
+    }
   }
 ];
 
@@ -480,6 +684,8 @@ async function runMistralTool(toolCall) {
 
   if (name === 'get_current_time') return parisClock();
   if (name === 'web_search') return searchWeb(argumentsObject.query);
+  if (name === 'advanced_markdown_search') return searchAdvancedMarkdown(argumentsObject.query);
+  if (name === 'advanced_markdown') return advancedMarkdownResult(argumentsObject.command, argumentsObject.spec, argumentsObject.title);
   return { error: `Fonction inconnue: ${name}` };
 }
 
@@ -528,13 +734,14 @@ async function callMistral(conversation) {
   const messages = [
     {
       role: 'system',
-      content: `Tu es Aster, un assistant IA utile, clair et chaleureux. Réponds en français sauf si l’utilisateur te parle dans une autre langue. Nous sommes le ${clock.date}, l’année actuelle est ${clock.year}, et il est ${clock.time} dans le fuseau Europe/Paris. Les fonctions te donnent l’heure réelle et permettent de rechercher le web : appelle get_current_time pour toute demande d’heure exacte, et web_search pour les informations récentes ou à vérifier. Tu peux utiliser Markdown (titres, listes, tableaux, liens et blocs de code) pour rendre tes réponses lisibles. Structure tes réponses avec des listes ou des étapes quand cela améliore la lisibilité. Ne prétends pas avoir accès à des informations privées ou à des actions que tu n’as pas effectuées.`
+      content: `Tu es Aster, un assistant IA utile, clair et chaleureux. Réponds en français sauf si l’utilisateur te parle dans une autre langue. Nous sommes le ${clock.date}, l’année actuelle est ${clock.year}, et il est ${clock.time} dans le fuseau Europe/Paris. La liste des outils disponibles est exposée dans l’appel : get_current_time, web_search, advanced_markdown_search et advanced_markdown. Les fonctions te donnent l’heure réelle et permettent de rechercher le web : appelle get_current_time pour toute demande d’heure exacte, et web_search pour les informations récentes ou à vérifier. Tu peux utiliser Markdown (titres, listes, tableaux, liens et blocs de code) pour rendre tes réponses lisibles. Pour une figure, une construction de géométrie, une équation ou un graphique, utilise Advanced Markdown. Si tu ne connais pas la commande, appelle d’abord advanced_markdown_search, puis appelle advanced_markdown avec un spec JSON. Quand advanced_markdown renvoie renderBlock, recopie ce bloc exactement dans ta réponse, sur sa propre ligne : l’interface le transforme en rendu SVG ou mathématique sécurisé directement dans le chat. Les syntaxes reconnues sont les blocs advanced-geometry, advanced-chart et advanced-math. Structure tes réponses avec des listes ou des étapes quand cela améliore la lisibilité. Ne prétends pas avoir accès à des informations privées ou à des actions que tu n’as pas effectuées.`
     },
     ...conversation.messages.slice(-14).map((message) => ({
       role: message.role === 'assistant' ? 'assistant' : 'user',
       content: String(message.content).slice(0, 7000)
     }))
   ];
+  const advancedBlocks = [];
 
   for (let turn = 0; turn < 4; turn += 1) {
     const data = await requestMistral({
@@ -552,12 +759,15 @@ async function callMistral(conversation) {
     if (!toolCalls.length) {
       const content = assistantMessage.content;
       if (typeof content !== 'string' || !content.trim()) throw new AppError(502, 'Mistral a renvoyé une réponse vide.');
-      return content.trim();
+      const answer = content.trim();
+      const missingBlocks = advancedBlocks.filter((block) => !answer.includes(block));
+      return missingBlocks.length ? `${answer}\n\n${missingBlocks.join('\n\n')}` : answer;
     }
 
     messages.push(assistantMessage);
     for (const toolCall of toolCalls) {
       const result = await runMistralTool(toolCall);
+      if (result?.renderBlock && !advancedBlocks.includes(result.renderBlock)) advancedBlocks.push(result.renderBlock);
       messages.push({
         role: 'tool',
         name: toolCall.function?.name || 'unknown',

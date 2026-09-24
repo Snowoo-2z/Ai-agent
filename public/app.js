@@ -78,6 +78,182 @@
     }
   }
 
+  function advancedFiniteNumber(value, fallback = 0) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : fallback;
+  }
+
+  function advancedSvgColor(value, fallback) {
+    const candidate = String(value || '').trim();
+    if (/^#[0-9a-f]{3,8}$/i.test(candidate) || /^[a-z]{1,24}$/i.test(candidate) || /^(?:rgb|rgba|hsl|hsla)\([^<>"`;]{1,80}\)$/i.test(candidate)) return candidate;
+    return fallback;
+  }
+
+  function advancedPoint(value) {
+    if (Array.isArray(value)) return { x: advancedFiniteNumber(value[0]), y: advancedFiniteNumber(value[1]) };
+    if (!value || typeof value !== 'object') return null;
+    return { x: advancedFiniteNumber(value.x), y: advancedFiniteNumber(value.y), label: String(value.label || '').slice(0, 48), color: value.color };
+  }
+
+  function advancedPointString(points) {
+    return points.map((point) => `${advancedFiniteNumber(point.x)},${advancedFiniteNumber(point.y)}`).join(' ');
+  }
+
+  function renderAdvancedGeometry(spec = {}) {
+    const width = Math.min(10000, Math.max(40, advancedFiniteNumber(spec.width, 100)));
+    const height = Math.min(10000, Math.max(40, advancedFiniteNumber(spec.height, 100)));
+    const title = escapeHtml(spec.title || 'Figure géométrique');
+    const parts = [];
+    const gridStep = Math.min(1000, Math.max(1, advancedFiniteNumber(spec.grid?.step, 10)));
+    if (spec.grid !== false) {
+      for (let x = 0; x <= width; x += gridStep) parts.push(`<line class="advanced-grid-line" x1="${x}" y1="0" x2="${x}" y2="${height}"/>`);
+      for (let y = 0; y <= height; y += gridStep) parts.push(`<line class="advanced-grid-line" x1="0" y1="${y}" x2="${width}" y2="${y}"/>`);
+    }
+    if (spec.axes !== false) {
+      parts.push(`<line class="advanced-axis-line" x1="0" y1="${height}" x2="${width}" y2="${height}"/>`);
+      parts.push(`<line class="advanced-axis-line" x1="0" y1="0" x2="0" y2="${height}"/>`);
+    }
+    (Array.isArray(spec.polygons) ? spec.polygons : []).forEach((polygon) => {
+      const points = (Array.isArray(polygon.points) ? polygon.points : []).map(advancedPoint).filter(Boolean);
+      if (points.length < 3) return;
+      const fill = advancedSvgColor(polygon.fill, 'rgba(125, 115, 255, .18)');
+      const stroke = advancedSvgColor(polygon.color, 'var(--advanced-accent)');
+      parts.push(`<polygon class="advanced-polygon" points="${advancedPointString(points)}" fill="${fill}" stroke="${stroke}"/>`);
+      if (polygon.label) {
+        const center = points.reduce((total, point) => ({ x: total.x + point.x / points.length, y: total.y + point.y / points.length }), { x: 0, y: 0 });
+        parts.push(`<text class="advanced-shape-label" x="${center.x}" y="${center.y}" text-anchor="middle">${escapeHtml(polygon.label)}</text>`);
+      }
+    });
+    (Array.isArray(spec.segments) ? spec.segments : []).forEach((segment) => {
+      const from = advancedPoint(segment.from);
+      const to = advancedPoint(segment.to);
+      if (!from || !to) return;
+      const color = advancedSvgColor(segment.color, 'var(--advanced-accent)');
+      parts.push(`<line class="advanced-segment${segment.dashed ? ' dashed' : ''}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" stroke="${color}"/>`);
+      if (segment.label) parts.push(`<text class="advanced-shape-label" x="${(from.x + to.x) / 2}" y="${(from.y + to.y) / 2 - 3}" text-anchor="middle">${escapeHtml(segment.label)}</text>`);
+    });
+    (Array.isArray(spec.circles) ? spec.circles : []).forEach((circle) => {
+      const center = advancedPoint(circle.center);
+      if (!center) return;
+      const radius = Math.max(.1, advancedFiniteNumber(circle.radius, 10));
+      const stroke = advancedSvgColor(circle.color, 'var(--advanced-accent)');
+      const fill = advancedSvgColor(circle.fill, 'rgba(105, 222, 180, .08)');
+      parts.push(`<circle class="advanced-circle" cx="${center.x}" cy="${center.y}" r="${radius}" fill="${fill}" stroke="${stroke}"/>`);
+      if (circle.label) parts.push(`<text class="advanced-shape-label" x="${center.x}" y="${center.y - radius - 3}" text-anchor="middle">${escapeHtml(circle.label)}</text>`);
+    });
+    (Array.isArray(spec.points) ? spec.points : []).forEach((value) => {
+      const point = advancedPoint(value);
+      if (!point) return;
+      const color = advancedSvgColor(point.color, 'var(--advanced-highlight)');
+      parts.push(`<circle class="advanced-point" cx="${point.x}" cy="${point.y}" r="2.5" fill="${color}"/>`);
+      if (point.label) parts.push(`<text class="advanced-point-label" x="${point.x + 3}" y="${point.y - 4}">${escapeHtml(point.label)}</text>`);
+    });
+    (Array.isArray(spec.labels) ? spec.labels : []).forEach((value) => {
+      const point = advancedPoint(value);
+      if (!point || !value.text) return;
+      parts.push(`<text class="advanced-point-label" x="${point.x}" y="${point.y}">${escapeHtml(value.text)}</text>`);
+    });
+    return `<figure class="advanced-card advanced-geometry-card"><figcaption>${title}<span>Advanced Markdown · géométrie</span></figcaption><div class="advanced-visual-wrap"><svg class="advanced-svg geometry-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${title}">${parts.join('')}</svg></div></figure>`;
+  }
+
+  function renderAdvancedChart(spec = {}) {
+    const labels = Array.isArray(spec.labels) ? spec.labels.map((label) => String(label || '').slice(0, 40)) : [];
+    const series = (Array.isArray(spec.series) ? spec.series : []).map((item) => ({
+      name: String(item?.name || 'Série').slice(0, 60),
+      color: item?.color,
+      values: Array.isArray(item?.values) ? item.values.map((value) => Number.isFinite(Number(value)) ? Number(value) : null) : []
+    })).filter((item) => item.values.some((value) => value !== null));
+    if (!labels.length || !series.length) return `<figure class="advanced-card advanced-chart-card"><figcaption>${escapeHtml(spec.title || 'Graphique')}<span>Advanced Markdown · graphique</span></figcaption><p class="advanced-empty">Aucune donnée numérique à afficher.</p></figure>`;
+    const width = 680;
+    const height = 330;
+    const margin = { top: 30, right: 24, bottom: 48, left: 52 };
+    const innerWidth = width - margin.left - margin.right;
+    const innerHeight = height - margin.top - margin.bottom;
+    const values = series.flatMap((item) => item.values).filter((value) => value !== null);
+    const min = Math.min(0, ...values);
+    const max = Math.max(1, ...values);
+    const range = max - min || 1;
+    const xFor = (index) => margin.left + (labels.length === 1 ? innerWidth / 2 : (index / (labels.length - 1)) * innerWidth);
+    const yFor = (value) => margin.top + ((max - value) / range) * innerHeight;
+    const parts = [];
+    for (let tick = 0; tick <= 4; tick += 1) {
+      const value = min + ((max - min) * tick) / 4;
+      const y = yFor(value);
+      parts.push(`<line class="advanced-grid-line" x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}"/>`);
+      parts.push(`<text class="advanced-axis-label" x="${margin.left - 8}" y="${y + 3}" text-anchor="end">${escapeHtml(Number(value.toFixed(2)).toString())}</text>`);
+    }
+    labels.forEach((label, index) => {
+      const x = labels.length === 1 ? xFor(index) : xFor(index);
+      const rotate = labels.length > 8 ? ` transform="rotate(-35 ${x} ${height - 16})"` : '';
+      parts.push(`<text class="advanced-axis-label" x="${x}" y="${height - 16}" text-anchor="middle"${rotate}>${escapeHtml(label)}</text>`);
+    });
+    const chartType = ['line', 'bar', 'scatter'].includes(spec.type) ? spec.type : 'line';
+    const palette = ['var(--advanced-accent)', 'var(--advanced-highlight)', 'var(--advanced-third)', '#f5b971', '#e989b5', '#9b8cff', '#7cd6c0', '#d8e27f'];
+    if (chartType === 'bar') {
+      const groupWidth = innerWidth / labels.length;
+      const barWidth = Math.max(2, (groupWidth / Math.max(series.length, 1)) * .72);
+      series.forEach((item, seriesIndex) => {
+        const color = advancedSvgColor(item.color, palette[seriesIndex % palette.length]);
+        item.values.forEach((value, index) => {
+          if (value === null) return;
+          const x = margin.left + index * groupWidth + seriesIndex * (groupWidth / series.length) + (groupWidth / series.length - barWidth) / 2;
+          const y = yFor(Math.max(value, 0));
+          const zero = yFor(0);
+          parts.push(`<rect class="advanced-bar" x="${x}" y="${Math.min(y, zero)}" width="${barWidth}" height="${Math.max(1, Math.abs(zero - y))}" rx="3" fill="${color}"/>`);
+        });
+      });
+    } else {
+      series.forEach((item, seriesIndex) => {
+        const color = advancedSvgColor(item.color, palette[seriesIndex % palette.length]);
+        let path = '';
+        item.values.forEach((value, index) => {
+          if (value === null) { path = ''; return; }
+          const command = path ? 'L' : 'M';
+          path += `${command} ${xFor(index)} ${yFor(value)} `;
+          if (chartType === 'scatter') parts.push(`<circle class="advanced-scatter" cx="${xFor(index)}" cy="${yFor(value)}" r="4" fill="${color}"/>`);
+        });
+        if (chartType === 'line' && path) parts.push(`<path class="advanced-line" d="${path.trim()}" stroke="${color}"/>`);
+        if (chartType === 'line') item.values.forEach((value, index) => { if (value !== null) parts.push(`<circle class="advanced-line-point" cx="${xFor(index)}" cy="${yFor(value)}" r="3.5" fill="${color}"/>`); });
+      });
+    }
+    const legend = series.map((item, index) => `<span><i style="background:${advancedSvgColor(item.color, palette[index % palette.length])}"></i>${escapeHtml(item.name)}</span>`).join('');
+    const axisText = [spec.xLabel, spec.yLabel].filter(Boolean).map((value) => escapeHtml(value)).join(' · ');
+    return `<figure class="advanced-card advanced-chart-card"><figcaption>${escapeHtml(spec.title || 'Graphique')}<span>Advanced Markdown · ${escapeHtml(chartType)}${axisText ? ` · ${axisText}` : ''}</span></figcaption><div class="advanced-visual-wrap"><svg class="advanced-svg chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(spec.title || 'Graphique')}">${parts.join('')}</svg></div><div class="advanced-legend">${legend}</div></figure>`;
+  }
+
+  function renderAdvancedMath(spec = {}) {
+    const steps = Array.isArray(spec.steps) ? spec.steps : [];
+    return `<figure class="advanced-card advanced-math-card"><figcaption>${escapeHtml(spec.title || 'Mathématiques')}<span>Advanced Markdown · formule</span></figcaption><div class="advanced-expression">${escapeHtml(spec.expression || 'Expression mathématique')}</div>${steps.length ? `<ol class="advanced-steps">${steps.map((step) => `<li>${escapeHtml(step)}</li>`).join('')}</ol>` : ''}${spec.result ? `<div class="advanced-result"><small>Résultat</small><strong>${escapeHtml(spec.result)}</strong></div>` : ''}</figure>`;
+  }
+
+  function renderAdvancedBlock(command, rawSpec) {
+    try {
+      const spec = JSON.parse(rawSpec.trim());
+      if (!spec || typeof spec !== 'object' || Array.isArray(spec)) return null;
+      if (command === 'geometry') return renderAdvancedGeometry(spec);
+      if (command === 'chart') return renderAdvancedChart(spec);
+      if (command === 'math') return renderAdvancedMath(spec);
+    } catch {
+      return null;
+    }
+    return null;
+  }
+
+  function extractAdvancedBlocks(value) {
+    const blocks = [];
+    let source = String(value ?? '');
+    const addBlock = (match, command, rawSpec) => {
+      const rendered = renderAdvancedBlock(command.toLowerCase(), rawSpec);
+      if (!rendered) return match;
+      const token = `@@ASTER_ADVANCED_${blocks.length}@@`;
+      blocks.push(rendered);
+      return `\n${token}\n`;
+    };
+    source = source.replace(/```(?:advanced[-_](?:markdown[-_]?)?|aster[-_])?(geometry|chart|math)\s*\n([\s\S]*?)```/gi, addBlock);
+    source = source.replace(/:::advanced[-_]?(?:markdown[-_]?)?(geometry|chart|math)\s*\n([\s\S]*?)\n:::/gi, addBlock);
+    return { source, blocks };
+  }
+
   function renderInlineMarkdown(value) {
     let text = escapeHtml(value);
     const placeholders = [];
@@ -108,7 +284,8 @@
   }
 
   function renderMarkdown(value) {
-    const lines = String(value ?? '').replace(/\r\n?/g, '\n').split('\n');
+    const advanced = extractAdvancedBlocks(value);
+    const lines = advanced.source.replace(/\r\n?/g, '\n').split('\n');
     const output = [];
     let paragraph = [];
     let codeLines = null;
@@ -214,7 +391,8 @@
       output.push(`<pre><code${languageClass}>${escapeHtml(codeLines.join('\n'))}</code></pre>`);
     }
     flushParagraph();
-    return output.join('') || '<p></p>';
+    const rendered = output.join('') || '<p></p>';
+    return rendered.replace(/<p>@@ASTER_ADVANCED_(\d+)@@<\/p>/g, (_, index) => advanced.blocks[Number(index)] || '');
   }
 
   function formatDate(value) {

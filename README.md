@@ -8,8 +8,8 @@ Aster est une plateforme de chat IA type ChatGPT, construite avec Node.js et Exp
 - session sécurisée par cookie HTTP-only signé ;
 - création, consultation et suppression de conversations ;
 - historique au format JSON dans `users/{pseudo}/conversations/` ;
-- réponse Mistral configurable par `MISTRAL_MODEL`, avec appel de fonction pour l’heure exacte et recherche web ;
-- rendu Markdown sécurisé : titres, listes, liens, tableaux et blocs de code ;
+- réponse Mistral configurable par `MISTRAL_MODEL`, avec appel de fonction pour l’heure exacte, la recherche web et le tool `Advanced Markdown` ;
+- rendu Markdown sécurisé : titres, listes, liens, tableaux, blocs de code et cartes SVG/mathématiques Advanced Markdown ;
 - interface responsive, thème clair/sombre, panneau de personnalisation du logo et aucun build frontend nécessaire ;
 - création instantanée des conversations : le fichier GitHub est écrit uniquement au premier message ;
 - déploiement direct sur Render avec `render.yaml`.
@@ -62,3 +62,21 @@ Ouvrir <http://localhost:10000>. Le endpoint de santé est disponible sur `/heal
 4. Vérifier que `GITHUB_BRANCH` correspond à la branche réellement utilisée par le dépôt de données.
 
 Le dépôt qui héberge l'application et le dépôt utilisé comme base de données peuvent être distincts. Ne jamais publier `.env` ou le token GitHub dans le dépôt.
+
+## Tool Advanced Markdown
+
+Mistral reçoit la liste complète des tools à chaque appel. Pour les demandes graphiques, l’IA peut d’abord utiliser `advanced_markdown_search` pour découvrir les commandes, puis `advanced_markdown` pour produire un bloc structuré. Le frontend reconnaît ces blocs et les rend sans exécuter de HTML ou de JavaScript fourni par le modèle :
+
+- `geometry` : figures SVG avec grille, axes, points, segments, polygones et cercles ;
+- `chart` : graphiques SVG `line`, `bar` ou `scatter` avec plusieurs séries ;
+- `math` : formule, étapes et résultat dans une carte mathématique lisible.
+
+Les blocs peuvent aussi être écrits directement dans une réponse :
+
+````text
+```advanced-chart
+{"type":"line","title":"Évolution","labels":["Jan","Fév","Mar"],"series":[{"name":"Valeur","values":[12,18,15]}]}
+```
+````
+
+Les données sont validées et limitées côté serveur avant d’être remises à Mistral, puis le rendu SVG est construit avec des valeurs échappées côté navigateur.
