@@ -12,7 +12,8 @@
     logo: 'cat',
     autoAnimation: 'breathe',
     autoAnimationTimer: null,
-    autoAnimationStep: 0
+    autoAnimationStep: 0,
+    interfaceStyle: 'nocturne'
   };
 
   const $ = (selector, parent = document) => parent.querySelector(selector);
@@ -53,6 +54,7 @@
     settingsDrawer: $('#settings-drawer'),
     settingsScrim: $('#settings-scrim'),
     selectedLogoLabel: $('#selected-logo-label'),
+    selectedStyleLabel: $('#selected-style-label'),
     toast: $('#toast'),
     chatScroll: $('#chat-scroll')
   };
@@ -298,6 +300,28 @@
     elements.themeButton?.setAttribute('aria-label', theme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre');
   }
 
+  const interfaceStyles = {
+    nocturne: { label: 'Nocturne', theme: 'dark' },
+    daylight: { label: 'Lumière', theme: 'light' },
+    aurora: { label: 'Aurora', theme: 'dark' },
+    sakura: { label: 'Sakura', theme: 'light' },
+    terminal: { label: 'Terminal', theme: 'dark' }
+  };
+
+  function setInterfaceStyle(style) {
+    const selected = interfaceStyles[style] ? style : 'nocturne';
+    state.interfaceStyle = selected;
+    document.documentElement.dataset.uiStyle = selected;
+    localStorage.setItem('aster-interface-style', selected);
+    setTheme(interfaceStyles[selected].theme);
+    $$('[data-style-choice]').forEach((button) => {
+      const active = button.dataset.styleChoice === selected;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-checked', String(active));
+    });
+    if (elements.selectedStyleLabel) elements.selectedStyleLabel.textContent = interfaceStyles[selected].label;
+  }
+
   const characterLabels = {
     cat: 'Chat',
     fox: 'Renard',
@@ -361,9 +385,11 @@
   }
 
   function initialisePreferences() {
+    const savedStyle = localStorage.getItem('aster-interface-style');
     const savedTheme = localStorage.getItem('aster-theme');
     const preferredTheme = window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-    setTheme(savedTheme || preferredTheme);
+    if (savedStyle && interfaceStyles[savedStyle]) setInterfaceStyle(savedStyle);
+    else setInterfaceStyle(savedTheme === 'light' || (!savedTheme && preferredTheme === 'light') ? 'daylight' : 'nocturne');
     setLogo(localStorage.getItem('aster-logo') || 'cat');
   }
 
@@ -683,6 +709,7 @@
     $('#close-settings').addEventListener('click', closeSettings);
     elements.settingsScrim.addEventListener('click', closeSettings);
     $$('[data-logo-choice]').forEach((button) => button.addEventListener('click', () => setLogo(button.dataset.logoChoice)));
+    $$('[data-style-choice]').forEach((button) => button.addEventListener('click', () => setInterfaceStyle(button.dataset.styleChoice)));
     elements.conversationList.addEventListener('click', (event) => {
       const button = event.target.closest('[data-conversation-id]');
       if (button) selectConversation(button.dataset.conversationId);
