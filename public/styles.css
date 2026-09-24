@@ -201,7 +201,7 @@ kbd { padding: 2px 5px; border: 1px solid var(--border-strong); border-radius: 4
 .user-details strong { color: var(--text); font-size: 11px; font-weight: 700; }
 .user-details span { margin-top: 3px; color: var(--muted); font-size: 9px; }
 .settings-user-button { color: var(--accent); }
-.settings-user-button:hover:not(:disabled) { border-color: rgba(169,155,255,.3); background: var(--accent-soft); color: var(--accent); }
+.user-row .settings-user-button:hover:not(:disabled) { border-color: rgba(169,155,255,.3); background: var(--accent-soft); color: var(--accent); }
 .icon-button { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid transparent; border-radius: 9px; background: transparent; color: var(--muted); cursor: pointer; transition: all 160ms; }
 .icon-button:hover:not(:disabled) { border-color: var(--border); background: var(--surface-soft); color: var(--text); }
 .icon-button:disabled { cursor: not-allowed; opacity: 0.25; }
