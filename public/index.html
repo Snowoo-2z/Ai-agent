@@ -7,7 +7,7 @@
     <meta name="description" content="Aster, votre espace de conversation avec une IA Mistral.">
     <title>Aster — Chat IA</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="/styles.css?v=20260925-sidebar">
+    <link rel="stylesheet" href="/styles.css?v=20260925-sidebar-fix2">
   </head>
   <body>
     <svg class="svg-sprite" aria-hidden="true" focusable="false">
@@ -220,7 +220,7 @@
             </div>
           </section>
           <section id="messages" class="messages hidden" aria-live="polite"></section>
-          <div id="typing-indicator" class="typing-indicator hidden" aria-label="Aster travaille">
+          <div id="typing-indicator" class="typing-indicator hidden" hidden aria-label="Aster travaille">
             <div class="assistant-avatar small"><svg class="icon" data-aster-logo aria-hidden="true"><use data-aster-use href="#icon-aster"></use></svg></div>
             <div class="thinking-panel">
               <div class="thinking-heading"><span class="thinking-pulse" aria-hidden="true"></span><strong id="thinking-title">Aster prépare une réponse</strong><button id="thinking-toggle" class="thinking-toggle" type="button" aria-expanded="true" aria-controls="thinking-steps" aria-label="Replier les étapes" title="Replier les étapes"><span aria-hidden="true">⌃</span></button></div>
@@ -243,6 +243,6 @@
     </section>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="/app.js?v=20260925-sidebar" defer></script>
+    <script src="/app.js?v=20260925-sidebar-fix2" defer></script>
   </body>
 </html>

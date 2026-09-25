@@ -16,6 +16,7 @@
     autoAnimationStep: 0,
     activityTimer: null,
     activityIndex: 0,
+    activityWatchdog: null,
     thinkingCollapsed: false,
     interfaceStyle: 'nocturne'
   };
@@ -954,9 +955,12 @@
   function startThinkingActivity(prompt) {
     const plan = thinkingPlan(prompt);
     window.clearInterval(state.activityTimer);
+    window.clearTimeout(state.activityWatchdog);
     state.activityIndex = 0;
     elements.thinkingTitle.textContent = plan.title;
     elements.thinkingSteps.innerHTML = plan.steps.map((step, index) => `<span class="thinking-step" data-thinking-index="${index}"><i class="thinking-step-marker" aria-hidden="true"></i>${escapeHtml(step)}</span>`).join('');
+    elements.typing.hidden = false;
+    elements.typing.style.removeProperty('display');
     elements.typing.classList.remove('hidden');
     updateThinkingStep();
     state.activityTimer = window.setInterval(() => {
@@ -964,12 +968,19 @@
       state.activityIndex = Math.min(state.activityIndex + 1, total - 1);
       updateThinkingStep();
     }, 900);
+    state.activityWatchdog = window.setTimeout(() => {
+      if (state.loading) elements.thinkingTitle.textContent = 'Aster finalise la réponse';
+    }, 12000);
   }
 
   function stopThinkingActivity() {
     window.clearInterval(state.activityTimer);
+    window.clearTimeout(state.activityWatchdog);
     state.activityTimer = null;
+    state.activityWatchdog = null;
     elements.typing.classList.add('hidden');
+    elements.typing.hidden = true;
+    elements.typing.style.display = 'none';
   }
 
   async function sendMessage(content = elements.messageInput.value) {
@@ -1044,6 +1055,7 @@
           }
         },
         done: (payload) => {
+          state.loading = false;
           stopThinkingActivity();
           if (payload?.conversation) {
             state.activeConversation = payload.conversation;
