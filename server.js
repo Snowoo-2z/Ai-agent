@@ -805,10 +805,165 @@ async function requestMistral(payload) {
   return data;
 }
 
-async function callMistral(conversation) {
+async function requestMistralStream(payload, onToken) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60000);
+  let response;
+  try {
+    response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.mistralApiKey}`,
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream'
+      },
+      body: JSON.stringify({ ...payload, stream: true }),
+      signal: controller.signal
+    });
+  } catch (error) {
+    if (error.name === 'AbortError') throw new AppError(504, 'Mistral met trop de temps à répondre.');
+    throw new AppError(502, 'Mistral est momentanément inaccessible.', { cause: error });
+  }
+
+  if (!response.ok) {
+    const raw = await response.text();
+    let data = null;
+    try { data = raw ? JSON.parse(raw) : null; } catch { data = null; }
+    clearTimeout(timeout);
+    if (response.status === 401 || response.status === 403) throw new AppError(502, 'La clé API Mistral est refusée.');
+    throw new AppError(502, 'Mistral n’a pas pu générer de réponse.', { cause: data?.message || raw });
+  }
+  if (!response.body?.getReader) {
+    clearTimeout(timeout);
+    throw new AppError(502, 'Le streaming Mistral n’est pas disponible sur ce serveur.');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let finished = false;
+  const contentParts = [];
+  const toolCallMap = new Map();
+
+  const consumeData = (rawData) => {
+    const data = rawData.trim();
+    if (!data || data === '[DONE]') {
+      if (data === '[DONE]') finished = true;
+      return;
+    }
+    let chunk;
+    try { chunk = JSON.parse(data); } catch { return; }
+    const choice = chunk?.choices?.[0];
+    const delta = choice?.delta || {};
+    const content = typeof delta.content === 'string' ? delta.content : (typeof choice?.text === 'string' ? choice.text : '');
+    if (content) {
+      contentParts.push(content);
+      onToken?.(content);
+    }
+    if (Array.isArray(delta.tool_calls)) {
+      delta.tool_calls.forEach((call, fallbackIndex) => {
+        const index = Number.isInteger(call.index) ? call.index : fallbackIndex;
+        const existing = toolCallMap.get(index) || {
+          id: call.id || `call_${index}`,
+          type: call.type || 'function',
+          function: { name: '', arguments: '' }
+        };
+        if (call.id) existing.id = call.id;
+        if (call.type) existing.type = call.type;
+        if (call.function?.name) existing.function.name += call.function.name;
+        if (call.function?.arguments) existing.function.arguments += String(call.function.arguments);
+        toolCallMap.set(index, existing);
+      });
+    }
+  };
+
+  try {
+    while (!finished) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop() || '';
+      lines.forEach((line) => {
+        if (line.startsWith('data:')) consumeData(line.slice(5));
+      });
+    }
+    buffer += decoder.decode();
+    buffer.split(/\r?\n/).forEach((line) => {
+      if (line.startsWith('data:')) consumeData(line.slice(5));
+    });
+  } finally {
+    clearTimeout(timeout);
+    reader.releaseLock();
+  }
+
+  return {
+    content: contentParts.join(''),
+    toolCalls: [...toolCallMap.entries()].sort(([a], [b]) => a - b).map(([, call]) => call)
+  };
+}
+
+async function callMistralStreaming(conversation, emit) {
   requireSetting(config.mistralApiKey, 'MISTRAL_API_KEY');
+  const messages = buildMistralMessages(conversation);
+  const advancedBlocks = [];
+  const usedTools = [];
+
+  for (let turn = 0; turn < 4; turn += 1) {
+    emit('status', { message: turn ? 'Aster intègre le résultat de son outil' : 'Aster rédige la réponse' });
+    const stream = await requestMistralStream({
+      model: config.mistralModel,
+      messages,
+      tools: mistralTools,
+      tool_choice: 'auto',
+      temperature: 0.7,
+      max_tokens: 1400
+    }, (text) => emit('token', { text }));
+
+    if (!stream.toolCalls.length) {
+      let answer = stream.content.trim();
+      const missingBlocks = advancedBlocks.filter((block) => !answer.includes(block));
+      if (!answer && missingBlocks.length) {
+        answer = 'Voici le rendu demandé :';
+        emit('token', { text: answer });
+      }
+      if (missingBlocks.length) {
+        const appended = `\n\n${missingBlocks.join('\n\n')}`;
+        emit('token', { text: appended });
+        answer += appended;
+      }
+      if (!answer) throw new AppError(502, 'Mistral a renvoyé une réponse vide.');
+      return { content: answer, tools: usedTools };
+    }
+
+    const assistantMessage = {
+      role: 'assistant',
+      content: stream.content || null,
+      tool_calls: stream.toolCalls
+    };
+    messages.push(assistantMessage);
+    for (const toolCall of stream.toolCalls) {
+      const result = await runMistralTool(toolCall);
+      const toolEntry = { name: toolCall.function?.name || 'unknown' };
+      if (result?.command) toolEntry.command = result.command;
+      if (!usedTools.some((item) => item.name === toolEntry.name && item.command === toolEntry.command)) usedTools.push(toolEntry);
+      if (result?.renderBlock && !advancedBlocks.includes(result.renderBlock)) advancedBlocks.push(result.renderBlock);
+      emit('tool', toolEntry);
+      messages.push({
+        role: 'tool',
+        name: toolCall.function?.name || 'unknown',
+        tool_call_id: toolCall.id,
+        content: JSON.stringify(result).slice(0, 6000)
+      });
+    }
+  }
+
+  throw new AppError(502, 'Aster n’a pas terminé l’appel de ses fonctions.');
+}
+
+function buildMistralMessages(conversation) {
   const clock = parisClock();
-  const messages = [
+  return [
     {
       role: 'system',
       content: `Tu es Aster, un assistant IA utile, clair et chaleureux. Réponds en français sauf si l’utilisateur te parle dans une autre langue. Nous sommes le ${clock.date}, l’année actuelle est ${clock.year}, et il est ${clock.time} dans le fuseau Europe/Paris. La liste des outils disponibles est exposée dans l’appel : get_current_time, web_search, advanced_markdown_search et advanced_markdown. Les fonctions te donnent l’heure réelle et permettent de rechercher le web : appelle get_current_time pour toute demande d’heure exacte, et web_search pour les informations récentes ou à vérifier. Tu peux utiliser Markdown (titres, listes, tableaux, liens et blocs de code) pour rendre tes réponses lisibles. Pour tout schéma, dessin, construction de géométrie, équation ou graphique, tu dois appeler Advanced Markdown au lieu de répondre seulement avec du texte ou un bloc de code. Si tu ne connais pas la commande, appelle d’abord advanced_markdown_search, puis appelle advanced_markdown avec un spec JSON. Quand advanced_markdown renvoie renderBlock, recopie ce bloc exactement dans ta réponse, sur sa propre ligne : l’interface le transforme en rendu SVG ou mathématique sécurisé directement dans le chat. Les syntaxes reconnues sont les blocs advanced-diagram, advanced-geometry, advanced-chart et advanced-math. Structure tes réponses avec des listes ou des étapes quand cela améliore la lisibilité. Ne prétends pas avoir accès à des informations privées ou à des actions que tu n’as pas effectuées.`
@@ -818,6 +973,11 @@ async function callMistral(conversation) {
       content: String(message.content).slice(0, 7000)
     }))
   ];
+}
+
+async function callMistral(conversation) {
+  requireSetting(config.mistralApiKey, 'MISTRAL_API_KEY');
+  const messages = buildMistralMessages(conversation);
   const advancedBlocks = [];
   const usedTools = [];
 
@@ -965,6 +1125,71 @@ app.delete('/api/conversations/:id', requireAuth, asyncRoute(async (req, res) =>
   );
   res.status(204).end();
 }));
+
+function sendSse(res, event, payload) {
+  if (res.writableEnded || res.destroyed) return;
+  res.write(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`);
+}
+
+app.post('/api/conversations/:id/messages/stream', requireAuth, async (req, res, next) => {
+  let headersSent = false;
+  let workingConversation = null;
+  try {
+    const content = cleanText(req.body?.content);
+    const id = validateConversationId(req.params.id);
+    const result = await getConversation(req.username, id, { optional: true });
+    const conversation = result?.conversation || newConversation();
+    workingConversation = conversation;
+    conversation.id = id;
+    const userMessage = {
+      id: `msg_${crypto.randomUUID()}`,
+      role: 'user',
+      content,
+      createdAt: new Date().toISOString()
+    };
+    if (conversation.messages.length === 0 || conversation.title === 'Nouvelle conversation') conversation.title = makeConversationTitle(content);
+    conversation.messages.push(userMessage);
+    conversation.updatedAt = new Date().toISOString();
+
+    const savedUser = await writeJsonFile(conversationPath(req.username, conversation.id), conversation, {
+      sha: result?.sha,
+      message: `Ajouter un message à ${conversation.id}`
+    });
+
+    res.status(200);
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders?.();
+    headersSent = true;
+    sendSse(res, 'meta', { conversationId: conversation.id, title: conversation.title });
+    sendSse(res, 'status', { message: 'Message enregistré, Aster commence à répondre' });
+
+    const resultFromModel = await callMistralStreaming(conversation, (event, payload) => sendSse(res, event, payload));
+    const assistantMessage = {
+      id: `msg_${crypto.randomUUID()}`,
+      role: 'assistant',
+      content: resultFromModel.content,
+      tools: Array.isArray(resultFromModel.tools) ? resultFromModel.tools : [],
+      createdAt: new Date().toISOString()
+    };
+    conversation.messages.push(assistantMessage);
+    conversation.updatedAt = new Date().toISOString();
+    await writeJsonFile(conversationPath(req.username, conversation.id), conversation, {
+      sha: savedUser.sha,
+      message: `Réponse IA dans ${conversation.id}`
+    });
+    sendSse(res, 'done', { conversation, message: assistantMessage, persisted: true });
+    res.end();
+  } catch (error) {
+    if (headersSent || res.headersSent) {
+      sendSse(res, 'error', { error: error.expose === false ? 'Une erreur est survenue.' : error.message, conversation: workingConversation });
+      return res.end();
+    }
+    next(error);
+  }
+});
 
 app.post('/api/conversations/:id/messages', requireAuth, asyncRoute(async (req, res) => {
   const content = cleanText(req.body?.content);

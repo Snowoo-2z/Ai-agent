@@ -504,6 +504,57 @@
     return payload;
   }
 
+  async function streamRequest(url, options = {}, handlers = {}) {
+    const { headers: customHeaders = {}, ...requestOptions } = options;
+    const response = await fetch(url, {
+      credentials: 'same-origin',
+      ...requestOptions,
+      headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream', ...customHeaders }
+    });
+    if (!response.ok) {
+      let payload = null;
+      try { payload = await response.json(); } catch { payload = null; }
+      const error = new Error(payload?.error || 'Une erreur est survenue.');
+      error.status = response.status;
+      error.payload = payload;
+      throw error;
+    }
+    if (!response.body?.getReader) throw new Error('Le streaming n’est pas disponible dans ce navigateur.');
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    const dispatch = (frame) => {
+      const lines = frame.split(/\r?\n/);
+      let eventName = 'message';
+      const dataLines = [];
+      lines.forEach((line) => {
+        if (line.startsWith('event:')) eventName = line.slice(6).trim();
+        if (line.startsWith('data:')) dataLines.push(line.slice(5).trim());
+      });
+      if (!dataLines.length) return;
+      let payload;
+      try { payload = JSON.parse(dataLines.join('\n')); } catch { payload = { raw: dataLines.join('\n') }; }
+      if (eventName === 'error') {
+        const error = new Error(payload.error || 'Le streaming a été interrompu.');
+        error.payload = payload;
+        throw error;
+      }
+      handlers[eventName]?.(payload);
+    };
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const frames = buffer.split(/\r?\n\r?\n/);
+      buffer = frames.pop() || '';
+      frames.forEach(dispatch);
+    }
+    buffer += decoder.decode();
+    if (buffer.trim()) dispatch(buffer);
+  }
+
   function showToast(message, type = '') {
     clearTimeout(state.toastTimer);
     elements.toast.textContent = message;
@@ -931,14 +982,56 @@
     startThinkingActivity(text);
     scrollToBottom();
 
+    let streamedMessage = null;
+    let lastStreamRender = 0;
     try {
-      const result = await request(`/api/conversations/${encodeURIComponent(state.activeConversation.id)}/messages`, {
+      await streamRequest(`/api/conversations/${encodeURIComponent(state.activeConversation.id)}/messages/stream`, {
         method: 'POST',
         body: JSON.stringify({ content: text })
+      }, {
+        meta: (payload) => {
+          if (payload?.title && state.activeConversation?.title === 'Nouvelle conversation') state.activeConversation.title = payload.title;
+        },
+        status: (payload) => {
+          if (payload?.message) elements.thinkingTitle.textContent = payload.message;
+        },
+        tool: (tool) => {
+          if (tool?.name === 'advanced_markdown_search') elements.thinkingTitle.textContent = 'Aster consulte les commandes Advanced Markdown';
+          if (tool?.name === 'advanced_markdown') elements.thinkingTitle.textContent = tool.command === 'diagram' ? 'Aster construit le schéma' : tool.command === 'chart' ? 'Aster construit le graphique' : 'Aster construit le rendu';
+          if (!streamedMessage) return;
+          streamedMessage.tools = [...(streamedMessage.tools || []), tool];
+          renderConversation();
+        },
+        token: (payload) => {
+          if (!payload?.text) return;
+          if (!streamedMessage) {
+            streamedMessage = {
+              id: `stream_${Date.now()}`,
+              role: 'assistant',
+              content: '',
+              tools: [],
+              createdAt: new Date().toISOString()
+            };
+            state.activeConversation.messages = [...(state.activeConversation.messages || []), streamedMessage];
+            renderConversation();
+          }
+          streamedMessage.content += payload.text;
+          const bubble = elements.messages.querySelector('.message-row.assistant:last-child .message-bubble');
+          if (bubble) bubble.innerHTML = renderMarkdown(streamedMessage.content);
+          const now = Date.now();
+          if (now - lastStreamRender > 90) {
+            lastStreamRender = now;
+            scrollToBottom();
+          }
+        },
+        done: (payload) => {
+          if (payload?.conversation) {
+            state.activeConversation = payload.conversation;
+            updateConversationSummary(payload.conversation);
+            renderConversation();
+          }
+        }
       });
-      state.activeConversation = result.conversation;
-      updateConversationSummary(result.conversation);
-      renderConversation();
     } catch (error) {
       if (error.payload?.conversation) {
         state.activeConversation = error.payload.conversation;

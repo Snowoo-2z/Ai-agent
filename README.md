@@ -8,7 +8,7 @@ Aster est une plateforme de chat IA type ChatGPT, construite avec Node.js et Exp
 - session sécurisée par cookie HTTP-only signé ;
 - création, consultation et suppression de conversations ;
 - historique au format JSON dans `users/{pseudo}/conversations/` ;
-- réponse Mistral configurable par `MISTRAL_MODEL`, avec appel de fonction pour l’heure exacte, la recherche web et le tool `Advanced Markdown` ;
+- réponse Mistral configurable par `MISTRAL_MODEL`, diffusée en streaming avec appel de fonction pour l’heure exacte, la recherche web et le tool `Advanced Markdown` ;
 - rendu Markdown sécurisé : titres, listes, liens, tableaux, blocs de code et cartes SVG/mathématiques Advanced Markdown ;
 - interface responsive, thème clair/sombre, panneau de personnalisation du logo et aucun build frontend nécessaire ;
 - création instantanée des conversations : le fichier GitHub est écrit uniquement au premier message ;
