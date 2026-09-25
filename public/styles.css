@@ -442,7 +442,12 @@ kbd { padding: 2px 5px; border: 1px solid var(--border-strong); border-radius: 4
 .typing-indicator { display: flex; width: min(100% - 48px, 840px); align-items: flex-start; gap: 13px; margin: 0 auto 30px; }
 .thinking-panel { min-width: min(100% - 48px, 430px); padding: 12px 15px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface-soft); }
 .thinking-heading { display: flex; align-items: center; gap: 8px; color: var(--text); font-size: 11px; }
-.thinking-heading strong { font-weight: 800; }
+.thinking-heading strong { flex: 1; font-weight: 800; }
+.thinking-toggle { display: inline-grid; width: 24px; height: 24px; place-items: center; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-soft); color: var(--muted-strong); cursor: pointer; font-size: 15px; line-height: 1; transition: background 180ms ease, color 180ms ease, transform 180ms ease; }
+.thinking-toggle:hover { background: var(--accent-soft); color: var(--accent); }
+.thinking-toggle span { display: block; transition: transform 180ms ease; }
+.thinking-panel.collapsed .thinking-toggle span { transform: rotate(180deg); }
+.thinking-panel.collapsed .thinking-steps { display: none; }
 .thinking-pulse { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); animation: thinking-pulse 1.4s infinite ease-in-out; }
 .thinking-steps { display: grid; gap: 6px; margin-top: 10px; }
 .thinking-step { display: flex; min-height: 14px; align-items: center; gap: 7px; color: var(--muted); font-family: var(--font-mono); font-size: 9px; line-height: 1.35; transition: color 180ms ease, opacity 180ms ease; }

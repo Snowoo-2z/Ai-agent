@@ -15,6 +15,7 @@
     autoAnimationStep: 0,
     activityTimer: null,
     activityIndex: 0,
+    thinkingCollapsed: false,
     interfaceStyle: 'nocturne'
   };
 
@@ -44,6 +45,8 @@
     welcomeName: $('#welcome-name'),
     messages: $('#messages'),
     typing: $('#typing-indicator'),
+    thinkingPanel: $('.thinking-panel'),
+    thinkingToggle: $('#thinking-toggle'),
     messageForm: $('#message-form'),
     messageInput: $('#message-input'),
     sendButton: $('#send-button'),
@@ -698,6 +701,7 @@
     if (savedStyle && interfaceStyles[savedStyle]) setInterfaceStyle(savedStyle);
     else setInterfaceStyle(savedTheme === 'light' || (!savedTheme && preferredTheme === 'light') ? 'daylight' : 'nocturne');
     setLogo(localStorage.getItem('aster-logo') || 'cat');
+    setThinkingCollapsed(localStorage.getItem('aster-thinking-collapsed') === 'true');
   }
 
   function openSettings() {
@@ -923,6 +927,15 @@
     };
   }
 
+  function setThinkingCollapsed(collapsed) {
+    state.thinkingCollapsed = Boolean(collapsed);
+    elements.thinkingPanel.classList.toggle('collapsed', state.thinkingCollapsed);
+    elements.thinkingToggle.setAttribute('aria-expanded', String(!state.thinkingCollapsed));
+    elements.thinkingToggle.setAttribute('aria-label', state.thinkingCollapsed ? 'Déployer les étapes' : 'Replier les étapes');
+    elements.thinkingToggle.setAttribute('title', state.thinkingCollapsed ? 'Déployer les étapes' : 'Replier les étapes');
+    localStorage.setItem('aster-thinking-collapsed', String(state.thinkingCollapsed));
+  }
+
   function updateThinkingStep() {
     const steps = $$('.thinking-step', elements.thinkingSteps);
     steps.forEach((step, index) => {
@@ -1021,7 +1034,7 @@
           const now = Date.now();
           if (now - lastStreamRender > 90) {
             lastStreamRender = now;
-            scrollToBottom();
+            scrollToBottom('auto');
           }
         },
         done: (payload) => {
@@ -1036,6 +1049,9 @@
       if (error.payload?.conversation) {
         state.activeConversation = error.payload.conversation;
         updateConversationSummary(state.activeConversation);
+        renderConversation();
+      } else if (streamedMessage && state.activeConversation?.messages) {
+        state.activeConversation.messages = state.activeConversation.messages.filter((message) => message.id !== streamedMessage.id);
         renderConversation();
       }
       showToast(error.message, 'error');
@@ -1081,9 +1097,9 @@
     elements.messageInput.style.height = `${Math.min(elements.messageInput.scrollHeight, 180)}px`;
   }
 
-  function scrollToBottom() {
+  function scrollToBottom(behavior = 'smooth') {
     requestAnimationFrame(() => {
-      elements.chatScroll.scrollTo({ top: elements.chatScroll.scrollHeight, behavior: 'smooth' });
+      elements.chatScroll.scrollTo({ top: elements.chatScroll.scrollHeight, behavior });
     });
   }
 
@@ -1117,6 +1133,7 @@
     elements.mobileScrim.addEventListener('click', closeSidebar);
     $('#logout-button').addEventListener('click', logout);
     elements.deleteButton.addEventListener('click', deleteActiveConversation);
+    elements.thinkingToggle.addEventListener('click', () => setThinkingCollapsed(!state.thinkingCollapsed));
     elements.settingsButton.addEventListener('click', openSettings);
     $('#close-settings').addEventListener('click', closeSettings);
     elements.settingsScrim.addEventListener('click', closeSettings);
