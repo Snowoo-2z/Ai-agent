@@ -134,7 +134,10 @@
             <span class="brand-mark"><svg class="icon" data-aster-logo aria-hidden="true"><use data-aster-use href="#icon-aster"></use></svg></span>
             <span>Aster</span>
           </div>
-          <button id="close-sidebar" class="icon-button mobile-only" type="button" aria-label="Fermer le menu"><svg class="icon"><use href="#icon-arrow"></use></svg></button>
+          <div class="sidebar-controls">
+            <button id="collapse-sidebar" class="sidebar-collapse-button" type="button" aria-expanded="true" aria-label="Replier la barre latérale" title="Replier la barre latérale"><svg class="icon"><use href="#icon-arrow"></use></svg></button>
+            <button id="close-sidebar" class="icon-button mobile-only" type="button" aria-label="Fermer le menu"><svg class="icon"><use href="#icon-arrow"></use></svg></button>
+          </div>
         </div>
         <button id="new-chat-button" class="new-chat-button" type="button"><span class="new-chat-icon"><svg class="icon"><use href="#icon-plus"></use></svg></span><span>Nouvelle conversation</span><kbd>N</kbd></button>
         <div class="sidebar-label"><span>VOS CONVERSATIONS</span><span id="conversation-count" class="count-pill">0</span></div>

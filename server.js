@@ -1167,6 +1167,7 @@ app.post('/api/conversations/:id/messages/stream', requireAuth, async (req, res,
     sendSse(res, 'status', { message: 'Message enregistré, Aster commence à répondre' });
 
     const resultFromModel = await callMistralStreaming(conversation, (event, payload) => sendSse(res, event, payload));
+    sendSse(res, 'complete', { message: 'Réponse reçue, finalisation de la conversation' });
     const assistantMessage = {
       id: `msg_${crypto.randomUUID()}`,
       role: 'assistant',

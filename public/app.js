@@ -9,6 +9,7 @@
     loading: false,
     toastTimer: null,
     authMode: 'login',
+    sidebarCollapsed: false,
     logo: 'cat',
     autoAnimation: 'breathe',
     autoAnimationTimer: null,
@@ -36,6 +37,7 @@
     loginForm: $('#login-form'),
     registerForm: $('#register-form'),
     sidebar: $('#sidebar'),
+    collapseSidebar: $('#collapse-sidebar'),
     mobileScrim: $('#mobile-scrim'),
     conversationList: $('#conversation-list'),
     conversationEmpty: $('#sidebar-empty'),
@@ -702,6 +704,7 @@
     else setInterfaceStyle(savedTheme === 'light' || (!savedTheme && preferredTheme === 'light') ? 'daylight' : 'nocturne');
     setLogo(localStorage.getItem('aster-logo') || 'cat');
     setThinkingCollapsed(localStorage.getItem('aster-thinking-collapsed') === 'true');
+    setSidebarCollapsed(localStorage.getItem('aster-sidebar-collapsed') === 'true');
   }
 
   function openSettings() {
@@ -1008,6 +1011,9 @@
         status: (payload) => {
           if (payload?.message) elements.thinkingTitle.textContent = payload.message;
         },
+        complete: () => {
+          stopThinkingActivity();
+        },
         tool: (tool) => {
           if (tool?.name === 'advanced_markdown_search') elements.thinkingTitle.textContent = 'Aster consulte les commandes Advanced Markdown';
           if (tool?.name === 'advanced_markdown') elements.thinkingTitle.textContent = tool.command === 'diagram' ? 'Aster construit le schéma' : tool.command === 'chart' ? 'Aster construit le graphique' : 'Aster construit le rendu';
@@ -1103,6 +1109,15 @@
     });
   }
 
+  function setSidebarCollapsed(collapsed) {
+    state.sidebarCollapsed = Boolean(collapsed);
+    elements.appView.classList.toggle('sidebar-collapsed', state.sidebarCollapsed);
+    elements.collapseSidebar.setAttribute('aria-expanded', String(!state.sidebarCollapsed));
+    elements.collapseSidebar.setAttribute('aria-label', state.sidebarCollapsed ? 'Déployer la barre latérale' : 'Replier la barre latérale');
+    elements.collapseSidebar.setAttribute('title', state.sidebarCollapsed ? 'Déployer la barre latérale' : 'Replier la barre latérale');
+    localStorage.setItem('aster-sidebar-collapsed', String(state.sidebarCollapsed));
+  }
+
   function openSidebar() {
     elements.sidebar.classList.add('open');
     elements.mobileScrim.classList.add('visible');
@@ -1128,6 +1143,7 @@
       input.type = input.type === 'password' ? 'text' : 'password';
     }));
     $('#new-chat-button').addEventListener('click', createConversation);
+    elements.collapseSidebar.addEventListener('click', () => setSidebarCollapsed(!state.sidebarCollapsed));
     $('#open-sidebar').addEventListener('click', openSidebar);
     $('#close-sidebar').addEventListener('click', closeSidebar);
     elements.mobileScrim.addEventListener('click', closeSidebar);
