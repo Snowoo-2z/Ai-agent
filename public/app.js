@@ -1044,6 +1044,7 @@
           }
         },
         done: (payload) => {
+          stopThinkingActivity();
           if (payload?.conversation) {
             state.activeConversation = payload.conversation;
             updateConversationSummary(payload.conversation);
