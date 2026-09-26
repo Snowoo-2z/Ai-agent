@@ -16,7 +16,6 @@
     autoAnimationStep: 0,
     activityTimer: null,
     activityIndex: 0,
-    activityWatchdog: null,
     thinkingCollapsed: false,
     interfaceStyle: 'nocturne'
   };
@@ -922,12 +921,12 @@
     if (/sch[ée]ma|diagramme|g[ée]om[ée]tr|triangle|figure|polygone|cercle|graphique|graphe|courbe|math/i.test(prompt)) {
       return {
         title: 'Aster construit un rendu visuel',
-        steps: ['Analyse la demande visuelle', 'Cherche la commande Advanced Markdown adaptée', 'Construit le schéma ou le graphique SVG', 'Vérifie les données avant affichage']
+        steps: ['Analyse la demande visuelle', 'Cherche la commande Advanced Markdown adaptée', 'Construit le schéma ou le graphique SVG']
       };
     }
     return {
       title: 'Aster prépare une réponse',
-      steps: ['Analyse votre demande', 'Sélectionne les outils utiles', 'Compose les grandes lignes de la réponse', 'Vérifie les détails']
+      steps: ['Analyse votre demande', 'Sélectionne les outils utiles', 'Compose les grandes lignes de la réponse']
     };
   }
 
@@ -955,7 +954,6 @@
   function startThinkingActivity(prompt) {
     const plan = thinkingPlan(prompt);
     window.clearInterval(state.activityTimer);
-    window.clearTimeout(state.activityWatchdog);
     state.activityIndex = 0;
     elements.thinkingTitle.textContent = plan.title;
     elements.thinkingSteps.innerHTML = plan.steps.map((step, index) => `<span class="thinking-step" data-thinking-index="${index}"><i class="thinking-step-marker" aria-hidden="true"></i>${escapeHtml(step)}</span>`).join('');
@@ -968,16 +966,11 @@
       state.activityIndex = Math.min(state.activityIndex + 1, total - 1);
       updateThinkingStep();
     }, 900);
-    state.activityWatchdog = window.setTimeout(() => {
-      if (state.loading) elements.thinkingTitle.textContent = 'Aster finalise la réponse';
-    }, 12000);
   }
 
   function stopThinkingActivity() {
     window.clearInterval(state.activityTimer);
-    window.clearTimeout(state.activityWatchdog);
     state.activityTimer = null;
-    state.activityWatchdog = null;
     elements.typing.classList.add('hidden');
     elements.typing.hidden = true;
     elements.typing.style.display = 'none';
